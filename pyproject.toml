@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optimization-checker"
+version = "0.1.0"
+description = "Safe, rollback-friendly optimization checker: snapshot + compare + validation docs."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "OpenClaw community" }]
+keywords = ["performance", "optimization", "validation", "openclaw", "ops"]
+
+dependencies = []
+
+[project.scripts]
+optcheck = "optcheck.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

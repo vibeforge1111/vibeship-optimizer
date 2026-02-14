@@ -1,0 +1,8 @@
+.optcheck/
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/
+reports/
