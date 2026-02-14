@@ -2,11 +2,15 @@
 
 Goal: run multi-day verification without breaking things.
 
-We schedule an **isolated cron job** that:
-- runs `optcheck monitor tick`
-- runs `optcheck preflight --change-id ...`
-- runs `optcheck change verify --change-id ...` (dry-run)
-- announces only when something is wrong (recommended)
+We schedule an **isolated cron job** that runs a single command:
+- `optcheck autopilot tick --change-id ...`
+
+This internally runs:
+- monitor tick
+- preflight (with change_id enforcement)
+- verify (dry-run)
+
+And exits non-zero if verification fails (ideal for cron alerting).
 
 ## Option A: main-session cron (system event)
 
@@ -24,9 +28,7 @@ openclaw cron add \
 ```
 
 Then, in your heartbeat instructions (or manual), you run:
-- `python -m optcheck monitor tick`
-- `python -m optcheck preflight --change-id <CHANGE_ID>`
-- `python -m optcheck change verify --change-id <CHANGE_ID>`
+- `python -m optcheck autopilot tick --change-id <CHANGE_ID>`
 
 ## Option B (recommended): isolated cron job with xhigh reasoning
 
@@ -39,7 +41,7 @@ openclaw cron add \
   --tz "Asia/Dubai" \
   --session isolated \
   --thinking xhigh \
-  --message "Run optcheck daily tick in <PROJECT_PATH> for change <CHANGE_ID>. Steps: (1) cd <PROJECT_PATH>; (2) python -m optcheck monitor tick; (3) python -m optcheck preflight --change-id <CHANGE_ID> --out reports/optcheck_preflight.md; (4) python -m optcheck change verify --change-id <CHANGE_ID> --min-monitor-days -1; If any FAIL, summarize." \
+  --message "Run optcheck autopilot tick in <PROJECT_PATH> for change <CHANGE_ID>. Steps: (1) cd <PROJECT_PATH>; (2) python -m optcheck autopilot tick --change-id <CHANGE_ID> --format text; If verify fails, summarize + point to .optcheck/reports/." \
   --announce \
   --channel telegram \
   --to "<YOUR_CHAT_ID>"
