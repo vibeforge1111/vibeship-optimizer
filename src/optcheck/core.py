@@ -58,6 +58,11 @@ def which_git_root(cwd: Path) -> Optional[Path]:
 
 
 def run_cmd(cmd: str, cwd: Path, timeout_s: Optional[int] = None) -> Tuple[int, str, str, float]:
+    """Run a shell command with robust decoding.
+
+    On Windows, subprocess defaults can raise UnicodeDecodeError when output
+    contains non-cp1252 bytes. We force UTF-8 with replacement.
+    """
     t0 = time.perf_counter()
     proc = subprocess.run(
         cmd,
@@ -65,6 +70,8 @@ def run_cmd(cmd: str, cwd: Path, timeout_s: Optional[int] = None) -> Tuple[int, 
         shell=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=timeout_s,
     )
     dt = time.perf_counter() - t0
@@ -182,8 +189,16 @@ def default_config() -> Dict[str, Any]:
         "timings": [
             {"name": "tests", "cmd": "", "runs": 1, "timeout_s": 900},
         ],
-        "size_paths": ["."] ,
+        "size_paths": ["."],
         "http_probes": [],
+        "review": {
+            "recommended": True,
+            "require_attestation": False,
+            "recommended_tools": {
+                "codex": {"reasoning_mode": "xhigh"},
+                "claude": {"reasoning_mode": "plan"},
+            },
+        },
     }
 
 
