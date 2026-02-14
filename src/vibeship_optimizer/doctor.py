@@ -38,10 +38,10 @@ def doctor(
     project_root: Path,
     apply: bool,
 ) -> Dict[str, Any]:
-    """Repair/normalize optcheck scaffolding.
+    """Repair/normalize vibeship-optimizer scaffolding.
 
     Safety:
-    - only touches .optcheck/config.json (and creates .optcheck/ dir)
+    - only touches .vibeship_optimizer/config.json (and creates .vibeship_optimizer/ dir)
     - never edits project source code
     """
 
@@ -108,9 +108,9 @@ def doctor(
         write_config(cfg_path, cfg)
 
     return {
-        "schema": "optcheck.doctor.v1",
+        "schema": "vibeship_optimizer.doctor.v1",
         "apply": bool(apply),
         "config_path": str(cfg_path),
         "actions": [a.to_dict() for a in actions],
-        "note": "Doctor only edits the optcheck config file (YAML/JSON). It does not edit your code.",
+        "note": "Doctor only edits the vibeship-optimizer config file (YAML/JSON). It does not edit your code.",
     }

@@ -1,74 +1,63 @@
-# Vibeship Optimizer (optcheck)
+# vibeship-optimizer
 
-**Vibeship Optimizer** is a **safe, rollback-friendly optimization workflow** for any codebase (and especially services / agents / OpenClaw deployments).
+vibeship-optimizer is a **safe, rollback-friendly way to optimize anything** (a codebase, a service, an agent stack, an OpenClaw deployment) **without breaking it**.
 
-It helps you do “Carmack-style” optimization:
+Instead of “random tweaks”, it gives you a repeatable workflow:
 
-- one change at a time
-- measurable evidence (before/after)
-- reversible by default
-- verified over days of real usage
+- **one change at a time**
+- **measure before & after**
+- **keep a rollback path**
+- **verify over real usage for days**
 
-This repo ships a small Python CLI called **`optcheck`**.
+It ships as a small Python CLI.
 
----
-
-## What it does
-
-`optcheck` gives you a disciplined loop:
-
-1. **Log the intent** (what you’re changing + why)
-2. **Capture a baseline snapshot** (health probes, commands, perf counters, etc.)
-3. Make a **single optimization change** (ideally one commit)
-4. **Capture an after snapshot**
-5. **Compare + report** (markdown diffs)
-6. **Monitor over multiple days** (tick-based verification)
-7. **Verify** (only when requirements are met)
-
-It’s designed to stop “random optimizations” from becoming untraceable or un-revertable.
+> Command name: `vibeship-optimizer`
+>
+> If that command isn’t found on your machine (common on Windows), use module mode:
+> `python -m vibeship_optimizer ...`
 
 ---
 
-## Core concepts
+## Who this is for
 
-### 1) Change Logbook (`OPTIMIZATION_CHECKER.md`)
-A living, auditable log of:
-- what changed
-- how to validate
-- before/after evidence
-- monitoring window + verification decision
+### Non-technical users (yes, you can use this)
+If you can:
+- copy/paste commands
+- run a “health check” command
+- read a short report
 
-### 2) Snapshots (`.optcheck/snapshots/*.json`)
-Structured machine-readable “before/after” state:
-- command outputs
-- service health checks
-- timings / sizes / counts
+…you can run a safe optimization loop with this.
 
-### 3) Preflight
-A “diligence gate” before you claim an optimization is real:
-- is there a baseline?
-- is there a rollback path?
-- were required checks run?
-- (optionally) was an LLM review bundle generated and attested?
-
-### 4) Monitor (multi-day)
-The whole point: some regressions don’t show up immediately.
-
-`optcheck monitor tick` is designed to run daily (cron / Task Scheduler) and append verification data.
-
-### 5) Autopilot
-A cron-friendly one-liner that runs the boring stuff:
-- monitor tick
-- preflight
-- verify (dry-run)
+### Technical users
+Engineers/ops can wire deeper probes, richer commands, and scheduled monitoring.
 
 ---
 
-## Install
+## The 5-minute mental model
 
-### Developer install (editable)
+vibeship-optimizer creates three kinds of evidence:
+
+1) **A logbook**: `OPTIMIZATION_CHECKER.md`
+2) **Snapshots**: `.vibeship_optimizer/snapshots/*.json`
+3) **Reports** (markdown) you can read/share
+
+You only “declare success” when the evidence says it’s real.
+
+---
+
+## Installation (check the path)
+
+### Option A — Install from GitHub (recommended)
 
 ```bash
+pip install git+https://github.com/vibeforge1111/vibeship-optimizer.git
+```
+
+### Option B — Install from a local folder (developer mode)
+
+```bash
+git clone https://github.com/vibeforge1111/vibeship-optimizer.git
+cd vibeship-optimizer
 python -m venv .venv
 # Windows:
 .venv\Scripts\activate
@@ -78,120 +67,165 @@ python -m venv .venv
 pip install -e .
 ```
 
-You should now have `optcheck` on PATH.
+### If `vibeship-optimizer` is “not recognized” (Windows fix)
+
+Either:
+- use module mode (always works):
+
+```bash
+python -m vibeship_optimizer --help
+```
+
+Or add your Python Scripts folder to PATH (pip prints the exact path when installing).
 
 ---
 
-## Quick start (in a target project)
+## Suggested workflow (non-technical, step-by-step)
 
-From your project root:
+This is the simplest safe loop.
 
-```bash
-# 1) Initialize optcheck scaffolding
-optcheck init
-
-# 2) Start a change log entry
-optcheck change start --title "Bound log growth"
-
-# 3) Capture baseline
-optcheck snapshot --label before
-
-# 4) Make ONE optimization change + commit it
-# ... edit code ...
-# git add -A && git commit -m "Bound log growth"
-
-# 5) Capture after snapshot
-optcheck snapshot --label after
-
-# 6) Compare snapshots → markdown report
-optcheck compare \
-  --before .optcheck/snapshots/<before>.json \
-  --after  .optcheck/snapshots/<after>.json \
-  --out reports/optcheck_compare.md
-
-# 7) Start multi-day monitoring
-optcheck monitor start --change-id <chg-id> --days 5
-
-# 8) Run once per day (UTC)
-optcheck monitor tick
-
-# 9) When you have evidence, verify
-optcheck change verify --change-id <chg-id> --min-monitor-days -1 --apply \
-  --summary "No regressions observed over 3 days"
-```
-
-If `optcheck` isn’t on PATH (common on Windows):
+### Step 0 — Go to your target project folder
+Example:
 
 ```bash
-python -m optcheck init
-python -m optcheck snapshot --label before
+cd C:\path\to\your-project
 ```
+
+### Step 1 — Initialize
+
+```bash
+python -m vibeship_optimizer init
+```
+
+This creates:
+- `OPTIMIZATION_CHECKER.md` (your logbook)
+- `.vibeship_optimizer/` (snapshots, config)
+
+### Step 2 — Start a change entry (what are we trying to improve?)
+
+```bash
+python -m vibeship_optimizer change start --title "Reduce memory usage"
+```
+
+### Step 3 — Capture a BEFORE snapshot
+
+```bash
+python -m vibeship_optimizer snapshot --label before
+```
+
+### Step 4 — Make exactly ONE change
+Examples:
+- change a config value
+- adjust a cache size
+- add log rotation
+- disable an expensive feature
+
+If you have git: commit it as 1 commit.
+
+### Step 5 — Capture an AFTER snapshot
+
+```bash
+python -m vibeship_optimizer snapshot --label after
+```
+
+### Step 6 — Compare and get a human-readable report
+
+```bash
+python -m vibeship_optimizer compare \
+  --before .vibeship_optimizer/snapshots/<before>.json \
+  --after  .vibeship_optimizer/snapshots/<after>.json \
+  --out reports/vibeship_optimizer_compare.md
+```
+
+### Step 7 — Monitor over days (optional but recommended)
+
+```bash
+python -m vibeship_optimizer monitor start --change-id <chg-id> --days 5
+python -m vibeship_optimizer monitor tick
+```
+
+---
+
+## OpenClaw users (recommended setup)
+
+If you’re using OpenClaw, vibeship-optimizer can help you:
+- do safe performance work on skills / services
+- keep evidence-based changelogs
+- schedule verification ticks
+
+What to do:
+
+1) Use the OpenClaw skill docs:
+- `openclaw_skill/vibeship-optimizer/SKILL.md`
+
+2) Generate/apply a cron-style tick (prints the command; can optionally apply):
+
+```bash
+python -m vibeship_optimizer openclaw cron-setup \
+  --change-id <chg-id> \
+  --cron "0 7 * * *" --tz "Asia/Dubai" \
+  --channel telegram --to "<chat_id>"
+```
+
+---
+
+## Claude & Codex users (LLM-assisted, evidence-based)
+
+The goal is **no hallucinated optimization claims**.
+
+### Recommended pattern
+1) Generate an evidence bundle:
+
+```bash
+python -m vibeship_optimizer review bundle --change-id <chg-id> --out reports/vibeship_optimizer_review_bundle.md
+```
+
+2) Paste that bundle into Claude/Codex and ask:
+- “Is the before/after evidence sufficient?”
+- “What could invalidate this result?”
+- “What next verification step would you run?”
+
+3) (Optional) record an attestation:
+
+```bash
+python -m vibeship_optimizer review attest \
+  --change-id <chg-id> \
+  --tool codex --reasoning-mode high \
+  --model "<model>" --reviewer "<name>"
+```
+
+Security note: **never paste secrets/tokens** into the bundle.
 
 ---
 
 ## Configuration
 
-`optcheck` looks for config in:
+vibeship-optimizer looks for config in:
 
-- `optcheck.yml` / `optcheck.yaml` (project root)
-- `.optcheck/config.yml` / `.optcheck/config.yaml`
-- `.optcheck/config.json`
-
-Example `optcheck.yml`:
-
-```yaml
-project:
-  name: my-service
-
-checks:
-  commands:
-    - name: unit-tests
-      cmd: "pytest -q"
-    - name: service-health
-      cmd: "curl -sS http://127.0.0.1:8765/health"
-
-review:
-  require_attestation: true
-```
+- `vibeship_optimizer.yml` / `vibeship_optimizer.yaml` (project root)
+- `.vibeship_optimizer/config.yml` / `.vibeship_optimizer/config.yaml`
+- `.vibeship_optimizer/config.json`
 
 ---
 
-## OpenClaw integration
+## Security / safety
 
-This repo includes an optional OpenClaw skill:
-
-- `openclaw_skill/optimization-checker/SKILL.md`
-
-And helper commands for cron-style automation:
-
-```bash
-# generate an OpenClaw cron payload to run daily
-autopilot="optcheck autopilot tick --change-id <chg-id>"
-optcheck openclaw cron-setup --change-id <chg-id> \
-  --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>"
-
-# apply it (writes cron job)
-optcheck openclaw cron-setup --change-id <chg-id> \
-  --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>" --apply
-```
-
----
-
-## Safety model
-
-`optcheck` is intentionally conservative:
-
-- It **does not auto-edit your code**.
+- The tool **does not auto-edit your code**.
 - It runs only commands you explicitly configure.
-- It encourages **one optimization per commit** + **always keep a rollback path**.
-- It produces **audit artifacts** (snapshots, reports, logbook entries).
+- It encourages one-change-per-commit and a rollback path.
+- The repo is set up to ignore local artifacts:
+  - `.vibeship_optimizer/`
+  - `reports/`
+  - `.venv/`
+
+If you’re publishing reports, **check them for secrets** before sharing.
 
 ---
 
 ## Repo layout
 
-- `src/optcheck/` — CLI + core logic
-- `OPTIMIZATION_CHECKER.md` — template logbook
+- `src/vibeship_optimizer/` — CLI + core logic
+- `OPTIMIZATION_CHECKER.md` — logbook template
 - `openclaw_skill/` — optional OpenClaw skill wrapper
 
 ---

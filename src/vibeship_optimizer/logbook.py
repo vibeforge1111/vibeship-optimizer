@@ -99,7 +99,7 @@ def create_change(
 ) -> Dict[str, Any]:
     cid = new_change_id(title)
     change: Dict[str, Any] = {
-        "schema": "optcheck.change.v1",
+        "schema": "vibeship_optimizer.change.v1",
         "change_id": cid,
         "title": str(title).strip(),
         "status": "planned",

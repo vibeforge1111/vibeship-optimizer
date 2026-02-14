@@ -1,9 +1,9 @@
-# OpenClaw automation: cron setup for optcheck
+# OpenClaw automation: cron setup for vibeship-optimizer
 
 Goal: run multi-day verification without breaking things.
 
 We schedule an **isolated cron job** that runs a single command:
-- `optcheck autopilot tick --change-id ...`
+- `vibeship-optimizer autopilot tick --change-id ...`
 
 This internally runs:
 - monitor tick
@@ -12,12 +12,12 @@ This internally runs:
 
 And exits non-zero if verification fails (ideal for cron alerting).
 
-## Recommended: generate a cron command via optcheck
+## Recommended: generate a cron command via vibeship-optimizer
 
-`optcheck` can generate the correct OpenClaw cron command for you:
+`vibeship-optimizer` can generate the correct OpenClaw cron command for you:
 
 ```bash
-optcheck openclaw cron-setup \
+vibeship-optimizer openclaw cron-setup \
   --change-id <CHANGE_ID> \
   --project-root <PROJECT_PATH> \
   --cron "0 7 * * *" \
@@ -29,7 +29,7 @@ optcheck openclaw cron-setup \
 To apply immediately (runs `openclaw cron add ...`):
 
 ```bash
-optcheck openclaw cron-setup \
+vibeship-optimizer openclaw cron-setup \
   --change-id <CHANGE_ID> \
   --project-root <PROJECT_PATH> \
   --cron "0 7 * * *" \
@@ -40,9 +40,9 @@ optcheck openclaw cron-setup \
 ```
 
 This sets up an isolated job that runs:
-- `python -m optcheck autopilot tick --change-id <CHANGE_ID>`
+- `python -m vibeship_optimizer autopilot tick --change-id <CHANGE_ID>`
 
 Notes:
 - `--min-monitor-days -1` means: use config `verification.min_monitor_days`.
 - Preflight enforces review attestation by default.
-- For noisy runs, set `--no-deliver` and check `.optcheck/reports/` later.
+- For noisy runs, set `--no-deliver` and check `.vibeship_optimizer/reports/` later.

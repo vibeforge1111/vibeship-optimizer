@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
-DEFAULT_DIR = Path(".optcheck")
+DEFAULT_DIR = Path(".vibeship_optimizer")
 SNAPSHOT_DIR = DEFAULT_DIR / "snapshots"
 
 
@@ -223,7 +223,7 @@ def load_config(config_path: Path) -> Dict[str, Any]:
     This keeps core snapshot functionality working even when callers pass a
     YAML config path.
 
-    Prefer using `optcheck.configio.load_config_for_project()` when possible.
+    Prefer using `vibeship_optimizer.configio.load_config_for_project()` when possible.
     """
     if not config_path.exists():
         return default_config()
@@ -277,7 +277,7 @@ def snapshot(
 
     # build snapshot
     snap: Dict[str, Any] = {
-        "schema": "optcheck.snapshot.v1",
+        "schema": "vibeship_optimizer.snapshot.v1",
         "generated_at": iso_now(),
         "label": label,
         "system": system_info(),
@@ -341,7 +341,7 @@ def _safe_token(text: str) -> str:
 
 def compare_snapshots(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any]:
     out: Dict[str, Any] = {
-        "schema": "optcheck.compare.v1",
+        "schema": "vibeship_optimizer.compare.v1",
         "before": {
             "label": before.get("label"),
             "generated_at": before.get("generated_at"),

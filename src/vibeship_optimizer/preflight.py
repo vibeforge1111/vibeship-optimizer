@@ -50,7 +50,7 @@ def preflight(
 
     Preflight does NOT change code. It only:
     - inspects git status
-    - checks optcheck config
+    - checks vibeship-optimizer config
     - runs read-only analyze report
     - emits actionable warnings
     """
@@ -98,7 +98,7 @@ def preflight(
                 level="fail",
                 code="CONFIG_MISSING",
                 message=f"Config is missing (expected at {find_config_path(project_root)}).",
-                hint="Run: optcheck init",
+                hint="Run: vibeship-optimizer init",
             )
         )
 
@@ -109,7 +109,7 @@ def preflight(
                 level="warn",
                 code="TIMINGS_EMPTY",
                 message="No timings configured (no commands will be timed).",
-                hint="Edit .optcheck/config.json and set timings[].cmd to your test/build commands.",
+                hint="Edit .vibeship_optimizer/config.json and set timings[].cmd to your test/build commands.",
             )
         )
     else:
@@ -153,7 +153,7 @@ def preflight(
                 level="info",
                 code="NO_SNAPSHOTS",
                 message="No snapshots found yet.",
-                hint="Run: optcheck snapshot --label before",
+                hint="Run: vibeship-optimizer snapshot --label before",
             )
         )
 
@@ -168,7 +168,7 @@ def preflight(
                     level="fail",
                     code="REVIEW_ATTESTATION_MISSING",
                     message=f"Review attestation missing for change_id={change_id}.",
-                    hint="Run: optcheck review bundle ... then optcheck review attest --tool codex --reasoning-mode xhigh ...",
+                    hint="Run: vibeship-optimizer review bundle ... then vibeship-optimizer review attest --tool codex --reasoning-mode xhigh ...",
                 )
             )
         elif not att_path.exists():
@@ -177,7 +177,7 @@ def preflight(
                     level="info",
                     code="REVIEW_ATTESTATION_RECOMMENDED",
                     message=f"No review attestation found for change_id={change_id} (recommended).",
-                    hint="Run: optcheck review bundle ... then optcheck review attest ...",
+                    hint="Run: vibeship-optimizer review bundle ... then vibeship-optimizer review attest ...",
                 )
             )
         else:
@@ -218,7 +218,7 @@ def preflight(
         worst = max((f.level for f in findings), key=_level_rank)
 
     report: Dict[str, Any] = {
-        "schema": "optcheck.preflight.v1",
+        "schema": "vibeship_optimizer.preflight.v1",
         "generated_at": iso_now(),
         "project_root": str(project_root),
         "worst_level": worst,

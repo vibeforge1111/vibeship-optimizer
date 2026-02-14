@@ -17,7 +17,7 @@ from .autopilot import autopilot_tick, render_autopilot_summary
 from .openclaw_integration import CronSpec, apply_cron_add, build_cron_add_command
 
 
-TEMPLATE_CHECKER = """# Optimization Checker
+TEMPLATE_CHECKER = """# vibeship-optimizer
 
 This file is a living validation playbook.
 
@@ -31,12 +31,12 @@ This file is a living validation playbook.
 
 Recommended loop:
 
-1) `optcheck init`
-2) `optcheck change start --title "..."`
-3) `optcheck snapshot --label before`
+1) `vibeship-optimizer init`
+2) `vibeship-optimizer change start --title "..."`
+3) `vibeship-optimizer snapshot --label before`
 4) Make *one* optimization + commit
-5) `optcheck snapshot --label after`
-6) `optcheck compare --before ... --after ... --out reports/...`
+5) `vibeship-optimizer snapshot --label after`
+6) `vibeship-optimizer compare --before ... --after ... --out reports/...`
 7) Monitor for 1–7 days; update the change section with results.
 
 ## Optimization log
@@ -239,7 +239,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def cmd_review_bundle(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    out = Path(args.out) if args.out else (root / ".optcheck" / "review_bundles" / f"{args.change_id}.md")
+    out = Path(args.out) if args.out else (root / ".vibeship_optimizer" / "review_bundles" / f"{args.change_id}.md")
     p = build_review_bundle(project_root=root, change_id=str(args.change_id), out_path=out)
     print(json.dumps({"wrote": str(p)}, indent=2))
     return 0
@@ -277,12 +277,12 @@ def cmd_autopilot_tick(args: argparse.Namespace) -> int:
 
 
 def cmd_openclaw_cron_setup(args: argparse.Namespace) -> int:
-    """Generate (and optionally apply) an OpenClaw cron job for optcheck autopilot."""
+    """Generate (and optionally apply) an OpenClaw cron job for vibeship-optimizer autopilot."""
     root = Path.cwd()
 
     project_root = str((Path(args.project_root).resolve() if args.project_root else root.resolve()))
     change_id = str(args.change_id)
-    name = str(args.name or f"optcheck autopilot tick ({change_id})")
+    name = str(args.name or f"vibeship-optimizer autopilot tick ({change_id})")
 
     spec = CronSpec(
         name=name,
@@ -309,10 +309,10 @@ def cmd_openclaw_cron_setup(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="optcheck", description="Optimization checker: snapshot + compare")
+    p = argparse.ArgumentParser(prog="vibeship-optimizer", description="vibeship-optimizer: safe optimization workflow (snapshot + compare + verify)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    sp = sub.add_parser("init", help="Create .optcheck config and OPTIMIZATION_CHECKER.md template")
+    sp = sub.add_parser("init", help="Create .vibeship_optimizer config and OPTIMIZATION_CHECKER.md template")
     sp.set_defaults(func=cmd_init)
 
     sp = sub.add_parser("snapshot", help="Capture a snapshot (sizes, timings, probes)")
@@ -379,7 +379,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_preflight)
 
     # Doctor
-    sp = sub.add_parser("doctor", help="Repair/normalize optcheck scaffolding (.optcheck/config.json only)")
+    sp = sub.add_parser("doctor", help="Repair/normalize vibeship-optimizer scaffolding (.vibeship_optimizer/config.json only)")
     sp.add_argument("--apply", action="store_true", help="Write changes (otherwise dry-run)")
     sp.set_defaults(func=cmd_doctor)
 
@@ -415,7 +415,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("openclaw", help="OpenClaw integration helpers")
     sub2 = sp.add_subparsers(dest="openclaw_cmd", required=True)
 
-    sp2 = sub2.add_parser("cron-setup", help="Generate (or apply) an OpenClaw cron job for optcheck autopilot")
+    sp2 = sub2.add_parser("cron-setup", help="Generate (or apply) an OpenClaw cron job for vibeship-optimizer autopilot")
     sp2.add_argument("--change-id", required=True)
     sp2.add_argument("--project-root", default="", help="Path to the target project (default: current directory)")
     sp2.add_argument("--name", default="", help="Cron job name")

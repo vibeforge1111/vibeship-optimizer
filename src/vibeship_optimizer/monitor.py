@@ -69,7 +69,7 @@ class MonitorState:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "schema": "optcheck.monitor.v1",
+            "schema": "vibeship_optimizer.monitor.v1",
             "change_id": self.change_id,
             "baseline_snapshot": self.baseline_snapshot,
             "days": int(self.days),
@@ -112,7 +112,7 @@ def start_monitor(
     if not baseline:
         latest = _latest_snapshot_path(project_root)
         if not latest:
-            raise ValueError("No snapshots found. Run: optcheck snapshot --label after")
+            raise ValueError("No snapshots found. Run: vibeship-optimizer snapshot --label after")
         baseline = str(latest)
 
     state = MonitorState(
@@ -134,7 +134,7 @@ def tick_monitor(
 ) -> Dict[str, Any]:
     state = load_monitor(project_root)
     if not state:
-        raise ValueError("No active monitor. Run: optcheck monitor start ...")
+        raise ValueError("No active monitor. Run: vibeship-optimizer monitor start ...")
 
     today = _utc_date()
     if not force and state.last_run_utc_date == today:

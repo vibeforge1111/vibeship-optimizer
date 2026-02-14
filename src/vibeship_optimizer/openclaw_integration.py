@@ -59,12 +59,12 @@ def build_cron_add_args(spec: CronSpec) -> list[str]:
     exe = resolve_openclaw_exe() or "openclaw"
 
     msg = (
-        "Run optcheck autopilot tick quietly (only alert on real problems). "
+        "Run vibeship-optimizer autopilot tick quietly (only alert on real problems). "
         f"Steps: (1) cd {spec.project_root}; "
-        f"(2) python -m optcheck autopilot tick --change-id {spec.change_id} --force --format json. "
+        f"(2) python -m vibeship_optimizer autopilot tick --change-id {spec.change_id} --force --format json. "
         "If verify.ok==true: output NO_REPLY. "
         "If verify.failures contains only 'insufficient monitor ticks' (pending days): output NO_REPLY. "
-        "Otherwise: output a concise summary + point to .optcheck/reports/."
+        "Otherwise: output a concise summary + point to .vibeship_optimizer/reports/."
     )
 
     parts: list[str] = [

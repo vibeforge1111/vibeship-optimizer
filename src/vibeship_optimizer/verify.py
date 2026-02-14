@@ -124,7 +124,7 @@ def apply_verified(
     )
 
     payload: Dict[str, Any] = {
-        "schema": "optcheck.verify_apply.v1",
+        "schema": "vibeship_optimizer.verify_apply.v1",
         "change_id": change_id,
         "ok": result.ok,
         "failures": result.failures,

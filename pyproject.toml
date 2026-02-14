@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vibeship-optimizer"
 version = "0.1.0"
-description = "Vibeship Optimizer: safe, rollback-friendly optimization workflow (optcheck) with snapshots + compare + verification."
+description = "vibeship-optimizer: safe, rollback-friendly optimization workflow with snapshots + compare + verification."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
@@ -15,7 +15,7 @@ keywords = ["performance", "optimization", "validation", "openclaw", "ops"]
 dependencies = ["PyYAML>=6.0"]
 
 [project.scripts]
-optcheck = "optcheck.cli:main"
+vibeship-optimizer = "vibeship_optimizer.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

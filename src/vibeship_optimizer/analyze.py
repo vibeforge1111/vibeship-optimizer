@@ -13,7 +13,7 @@ from .questionnaire import detect_languages, questions_from_report, select_quest
 
 DEFAULT_EXCLUDE_DIRS = {
     ".git",
-    ".optcheck",
+    ".vibeship_optimizer",
     ".venv",
     "venv",
     "node_modules",
@@ -239,7 +239,7 @@ def analyze_project(
     intents = list(project_cfg.get("intents") or []) if isinstance(project_cfg, dict) else []
 
     report: Dict[str, Any] = {
-        "schema": "optcheck.analyze.v1",
+        "schema": "vibeship_optimizer.analyze.v1",
         "generated_at": iso_now(),
         "project_root": str(project_root),
         "languages_detected": sorted({str(x) for x in languages}),

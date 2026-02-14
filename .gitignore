@@ -1,4 +1,4 @@
-.optcheck/
+.vibeship_optimizer/
 __pycache__/
 *.pyc
 .venv/

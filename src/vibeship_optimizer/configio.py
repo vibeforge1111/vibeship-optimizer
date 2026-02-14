@@ -8,8 +8,8 @@ from .core import DEFAULT_DIR, default_config, read_text
 
 
 CONFIG_CANDIDATES = [
-    Path("optcheck.yml"),
-    Path("optcheck.yaml"),
+    Path("vibeship_optimizer.yml"),
+    Path("vibeship_optimizer.yaml"),
     DEFAULT_DIR / "config.yml",
     DEFAULT_DIR / "config.yaml",
     DEFAULT_DIR / "config.json",

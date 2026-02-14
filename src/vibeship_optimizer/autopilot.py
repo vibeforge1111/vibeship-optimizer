@@ -41,7 +41,7 @@ def autopilot_tick(*, project_root: Path, change_id: str, force: bool = False) -
     )
 
     return {
-        "schema": "optcheck.autopilot_tick.v1",
+        "schema": "vibeship_optimizer.autopilot_tick.v1",
         "change_id": change_id,
         "monitor": monitor_res,
         "preflight": {
@@ -60,7 +60,7 @@ def render_autopilot_summary(payload: Dict[str, Any]) -> str:
     vr = payload.get("verify") or {}
 
     lines = []
-    lines.append(f"optcheck autopilot tick: {change_id}")
+    lines.append(f"vibeship-optimizer autopilot tick: {change_id}")
     if mon.get("skipped"):
         lines.append(f"- monitor: skipped ({mon.get('reason')})")
     else:
