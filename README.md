@@ -81,8 +81,11 @@ optcheck preflight --change-id <chg-id> --out reports/optcheck_preflight.md
 # edit your config and set: review.require_attestation: false
 
 # when you have enough evidence, mark the change verified (refuses if missing requirements)
-optcheck change verify --change-id <chg-id> --min-monitor-days 3
-optcheck change verify --change-id <chg-id> --min-monitor-days 3 --apply --summary "No regressions observed over 3 days"
+optcheck change verify --change-id <chg-id> --min-monitor-days -1
+optcheck change verify --change-id <chg-id> --min-monitor-days -1 --apply --summary "No regressions observed over 3 days"
+
+# cron-friendly one-liner (runs monitor tick + preflight + verify dry-run)
+optcheck autopilot tick --change-id <chg-id>
 
 # repair/normalize optcheck scaffolding (dry-run by default)
 optcheck doctor

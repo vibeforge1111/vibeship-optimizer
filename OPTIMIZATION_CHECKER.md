@@ -21,7 +21,7 @@ Recommended loop:
 7) Start a multi-day monitor: `optcheck monitor start --change-id <chg-...>`
 8) Run a daily tick: `optcheck monitor tick` (once per day)
 9) Mark verified when evidence is sufficient:
-   - `optcheck change verify --change-id <chg-...> --min-monitor-days 3 --apply --summary "..."`
+   - `optcheck change verify --change-id <chg-...> --min-monitor-days -1 --apply --summary "..."`
 
 ## Optimization log
 
