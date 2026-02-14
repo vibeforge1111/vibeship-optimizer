@@ -16,6 +16,7 @@ from .review import build_review_bundle, write_attestation
 from .verify import apply_verified, verify_change
 from .autopilot import autopilot_tick, render_autopilot_summary
 from .openclaw_integration import CronSpec, apply_cron_add, build_cron_add_command
+from .onboarding import apply_onboarding, onboarding_next_steps, suggest_timing_cmd
 
 
 TEMPLATE_CHECKER = """# vibeship-optimizer
@@ -45,35 +46,94 @@ Recommended loop:
 """
 
 
-def cmd_init(args: argparse.Namespace) -> int:
-    root = Path.cwd()
+def init_project(project_root: Path) -> dict:
+    """Initialize a project folder (idempotent).
+
+    Returns a dict with paths and whether each file was created/migrated.
+    """
+    root = project_root
+    created = {"config": False, "logbook": False, "logbook_migrated": False}
+
     opt_dir = root / resolve_state_dir(root)
     opt_dir.mkdir(parents=True, exist_ok=True)
 
     cfg_path = find_config_path(root)
     if not cfg_path.exists():
-        # Minimal config: users edit commands they care about.
         cfg, _path = load_config_for_project(root)
-        # Ensure strict defaults are written for new projects.
         cfg = {**cfg, **{"review": cfg.get("review"), "verification": cfg.get("verification")}}
         write_config(cfg_path, cfg)
+        created["config"] = True
 
     checker_path = root / "VIBESHIP_OPTIMIZER.md"
     legacy_path = root / "OPTIMIZATION_CHECKER.md"
 
-    # Migration: if an older logbook exists, rename it into the new canonical name.
     if not checker_path.exists() and legacy_path.exists():
         try:
             legacy_path.replace(checker_path)
+            created["logbook_migrated"] = True
         except Exception:
-            # If rename fails (e.g. permissions), fall back to copying.
             write_text(checker_path, legacy_path.read_text(encoding="utf-8", errors="ignore"))
+            created["logbook_migrated"] = True
 
     if not checker_path.exists():
         write_text(checker_path, TEMPLATE_CHECKER)
+        created["logbook"] = True
 
-    print(f"Initialized: {cfg_path}")
-    print(f"Initialized: {checker_path}")
+    return {"config_path": str(cfg_path), "logbook_path": str(checker_path), "created": created}
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    res = init_project(root)
+    print(f"Initialized: {res['config_path']}")
+    print(f"Initialized: {res['logbook_path']}")
+    return 0
+
+
+def cmd_onboard(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    init_project(root)
+
+    cfg, cfg_path = load_config_for_project(root)
+
+    timing_cmd = str(args.timing_cmd or "").strip()
+    if not timing_cmd:
+        timing_cmd = suggest_timing_cmd(project_root=root, languages=(cfg.get("project") or {}).get("languages") or [])
+
+    updated, changes = apply_onboarding(
+        project_root=root,
+        config=cfg,
+        timing_cmd=timing_cmd,
+        force=bool(args.force),
+    )
+
+    if changes and not bool(args.dry_run):
+        write_config(Path(cfg_path), updated)
+
+    payload = {
+        "schema": "vibeship_optimizer.onboard.v1",
+        "ok": True,
+        "project_root": str(root),
+        "config_path": str(cfg_path),
+        "dry_run": bool(args.dry_run),
+        "changes": changes,
+        "next_steps": onboarding_next_steps()[:6],
+    }
+
+    if args.format == "json":
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"Onboarding complete. Config: {cfg_path}")
+        if changes:
+            print("Applied:")
+            for ch in changes[:10]:
+                print(f"- {ch.get('code')}: {ch.get('value')}")
+        else:
+            print("No config changes applied (already configured or no safe suggestion).")
+        print("Next steps:")
+        for line in onboarding_next_steps()[:5]:
+            print(f"- {line}")
+
     return 0
 
 
@@ -146,7 +206,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
 
 def cmd_change_start(args: argparse.Namespace) -> int:
     # Convenience: ensure init has been run (idempotent).
-    cmd_init(argparse.Namespace())
+    init_project(Path.cwd())
 
     root = Path.cwd()
     checker_path = root / "VIBESHIP_OPTIMIZER.md"
@@ -187,7 +247,7 @@ def cmd_change_list(args: argparse.Namespace) -> int:
 
 def cmd_change_verify(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    cmd_init(argparse.Namespace())
+    init_project(root)
 
     cfg, _cfg_path = load_config_for_project(root)
 
@@ -225,7 +285,7 @@ def cmd_change_verify(args: argparse.Namespace) -> int:
 
 def cmd_monitor_start(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    cmd_init(argparse.Namespace())
+    init_project(root)
     try:
         path = start_monitor(
             project_root=root,
@@ -242,7 +302,7 @@ def cmd_monitor_start(args: argparse.Namespace) -> int:
 
 def cmd_monitor_tick(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    cmd_init(argparse.Namespace())
+    init_project(root)
     checker_path = root / "VIBESHIP_OPTIMIZER.md"
     try:
         res = tick_monitor(project_root=root, checker_path=checker_path, force=bool(args.force))
@@ -323,7 +383,7 @@ def cmd_review_attest(args: argparse.Namespace) -> int:
 
 def cmd_autopilot_tick(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    cmd_init(argparse.Namespace())
+    init_project(root)
 
     payload = autopilot_tick(project_root=root, change_id=str(args.change_id), force=bool(args.force))
 
@@ -390,6 +450,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("init", help="Create .vibeship-optimizer config and VIBESHIP_OPTIMIZER.md template")
     sp.set_defaults(func=cmd_init)
+
+    sp = sub.add_parser("onboard", help="First-run onboarding: set minimal config + print next steps")
+    sp.add_argument("--timing-cmd", default="", help="Optional: set timings[0].cmd and commands.test to this command")
+    sp.add_argument("--force", action="store_true", help="Overwrite existing config values when possible")
+    sp.add_argument("--dry-run", action="store_true", help="Print what would change without writing config")
+    sp.add_argument("--format", default="text", choices=["text", "json"], help="Output format")
+    sp.set_defaults(func=cmd_onboard)
 
     sp = sub.add_parser("snapshot", help="Capture a snapshot (sizes, timings, probes)")
     sp.add_argument("--label", default="", help="label for snapshot")

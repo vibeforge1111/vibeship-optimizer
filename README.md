@@ -84,6 +84,19 @@ Or add your Python Scripts folder to PATH (pip prints the exact path when instal
 
 This is the simplest safe loop.
 
+### Optional: quick onboarding (recommended)
+
+If this is your first time using vibeship-optimizer in a project, run:
+
+```bash
+python -m vibeship_optimizer onboard
+```
+
+This will:
+- ensure the logbook + config exist
+- try to set a safe default timing command (only when it has a strong guess)
+- print the next 3–5 commands to run
+
 ### Step 0 — Go to your target project folder
 Example:
 
