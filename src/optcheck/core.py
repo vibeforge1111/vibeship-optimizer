@@ -193,11 +193,20 @@ def default_config() -> Dict[str, Any]:
         "http_probes": [],
         "review": {
             "recommended": True,
-            "require_attestation": False,
+            "require_attestation": True,
+            "enforce_recommended_modes": True,
+            "allowed_modes": {
+                "codex": ["xhigh", "high"],
+                "claude": ["plan"],
+            },
             "recommended_tools": {
                 "codex": {"reasoning_mode": "xhigh"},
                 "claude": {"reasoning_mode": "plan"},
             },
+        },
+        "verification": {
+            "min_monitor_days": 3,
+            "require_clean_git": False,
         },
     }
 
