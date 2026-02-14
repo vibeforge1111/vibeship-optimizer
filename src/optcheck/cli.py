@@ -7,6 +7,7 @@ from pathlib import Path
 from .core import DEFAULT_DIR, compare_snapshots, read_json, render_compare_markdown, snapshot, write_text, write_json
 from .logbook import create_change, list_changes, load_change
 from .monitor import load_monitor, start_monitor, tick_monitor
+from .analyze import analyze_project
 
 
 TEMPLATE_CHECKER = """# Optimization Checker
@@ -169,6 +170,17 @@ def cmd_monitor_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_analyze(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    out = Path(args.out) if args.out else None
+    report = analyze_project(project_root=root, out_md=out)
+    if out:
+        print(json.dumps({"wrote": str(out)}, indent=2))
+    else:
+        print(json.dumps(report, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="optcheck", description="Optimization checker: snapshot + compare")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -219,6 +231,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp2 = sub2.add_parser("status", help="Show active monitor status")
     sp2.set_defaults(func=cmd_monitor_status)
+
+    # Analyzers (safe, read-only)
+    sp = sub.add_parser("analyze", help="Read-only analyzers for bloat / unused-dep hints")
+    sp.add_argument("--out", default="", help="Write markdown report to path")
+    sp.set_defaults(func=cmd_analyze)
 
     return p
 

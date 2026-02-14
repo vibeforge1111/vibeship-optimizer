@@ -60,6 +60,9 @@ optcheck monitor start --change-id <chg-id> --days 5
 
 # run once per day (UTC) to append verification updates
 optcheck monitor tick
+
+# run read-only analyzers (bloat / maybe-unused deps)
+optcheck analyze --out reports/optcheck_analyze.md
 ```
 
 ### If `optcheck` isn’t on PATH (common on Windows)
