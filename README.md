@@ -87,6 +87,11 @@ optcheck change verify --change-id <chg-id> --min-monitor-days -1 --apply --summ
 # cron-friendly one-liner (runs monitor tick + preflight + verify dry-run)
 optcheck autopilot tick --change-id <chg-id>
 
+# generate an OpenClaw cron command to run autopilot daily
+optcheck openclaw cron-setup --change-id <chg-id> --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>"
+# optionally apply it:
+optcheck openclaw cron-setup --change-id <chg-id> --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>" --apply
+
 # repair/normalize optcheck scaffolding (dry-run by default)
 optcheck doctor
 optcheck doctor --apply

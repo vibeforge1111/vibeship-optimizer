@@ -14,6 +14,7 @@ from .doctor import doctor
 from .review import build_review_bundle, write_attestation
 from .verify import apply_verified, verify_change
 from .autopilot import autopilot_tick, render_autopilot_summary
+from .openclaw_integration import CronSpec, apply_cron_add, build_cron_add_command
 
 
 TEMPLATE_CHECKER = """# Optimization Checker
@@ -275,6 +276,38 @@ def cmd_autopilot_tick(args: argparse.Namespace) -> int:
     return 0 if ok else 2
 
 
+def cmd_openclaw_cron_setup(args: argparse.Namespace) -> int:
+    """Generate (and optionally apply) an OpenClaw cron job for optcheck autopilot."""
+    root = Path.cwd()
+
+    project_root = str((Path(args.project_root).resolve() if args.project_root else root.resolve()))
+    change_id = str(args.change_id)
+    name = str(args.name or f"optcheck autopilot tick ({change_id})")
+
+    spec = CronSpec(
+        name=name,
+        cron=str(args.cron),
+        tz=str(args.tz),
+        project_root=project_root,
+        change_id=change_id,
+        thinking=str(args.thinking or "xhigh"),
+        model=str(args.model or ""),
+        announce=not bool(args.no_deliver),
+        channel=str(args.channel or "last"),
+        to=str(args.to or ""),
+    )
+
+    cmd = build_cron_add_command(spec)
+
+    if bool(args.apply):
+        res = apply_cron_add(spec=spec, cwd=root)
+        print(json.dumps({"spec": spec.to_dict(), "result": res}, indent=2))
+        return 0 if res.get("ok") else 2
+
+    print(json.dumps({"spec": spec.to_dict(), "command": cmd}, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="optcheck", description="Optimization checker: snapshot + compare")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -377,6 +410,24 @@ def build_parser() -> argparse.ArgumentParser:
     sp2.add_argument("--force", action="store_true", help="Force monitor tick even if already ran today (UTC)")
     sp2.add_argument("--format", default="text", choices=["text", "json"], help="Output format")
     sp2.set_defaults(func=cmd_autopilot_tick)
+
+    # OpenClaw helper
+    sp = sub.add_parser("openclaw", help="OpenClaw integration helpers")
+    sub2 = sp.add_subparsers(dest="openclaw_cmd", required=True)
+
+    sp2 = sub2.add_parser("cron-setup", help="Generate (or apply) an OpenClaw cron job for optcheck autopilot")
+    sp2.add_argument("--change-id", required=True)
+    sp2.add_argument("--project-root", default="", help="Path to the target project (default: current directory)")
+    sp2.add_argument("--name", default="", help="Cron job name")
+    sp2.add_argument("--cron", default="0 7 * * *", help="Cron expression (5-field)")
+    sp2.add_argument("--tz", default="UTC", help="IANA timezone")
+    sp2.add_argument("--thinking", default="xhigh", help="OpenClaw thinking level for isolated job")
+    sp2.add_argument("--model", default="", help="Optional model override")
+    sp2.add_argument("--channel", default="last", help="Delivery channel (telegram/slack/etc or last)")
+    sp2.add_argument("--to", default="", help="Delivery target (chat id, channel id, etc)")
+    sp2.add_argument("--no-deliver", action="store_true", help="Disable delivery (internal only)")
+    sp2.add_argument("--apply", action="store_true", help="Run 'openclaw cron add ...' now")
+    sp2.set_defaults(func=cmd_openclaw_cron_setup)
 
     return p
 
