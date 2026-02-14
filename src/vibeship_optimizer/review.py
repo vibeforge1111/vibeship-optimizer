@@ -187,7 +187,7 @@ def build_review_bundle(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     write_text(out_path, "\n".join(lines))
 
-    # Save under .vibeship_optimizer by default if desired.
+    # Save under .vibeship-optimizer by default if desired.
     try:
         default_out = (project_root / BUNDLE_DIR / f"{_safe_file_token(change_id)}_{int(time.time())}.md").resolve()
         if default_out != out_path:

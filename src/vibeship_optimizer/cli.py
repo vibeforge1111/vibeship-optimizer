@@ -57,7 +57,17 @@ def cmd_init(args: argparse.Namespace) -> int:
         cfg = {**cfg, **{"review": cfg.get("review"), "verification": cfg.get("verification")}}
         write_config(cfg_path, cfg)
 
-    checker_path = root / "OPTIMIZATION_CHECKER.md"
+    checker_path = root / "VIBESHIP_OPTIMIZER.md"
+    legacy_path = root / "OPTIMIZATION_CHECKER.md"
+
+    # Migration: if an older logbook exists, rename it into the new canonical name.
+    if not checker_path.exists() and legacy_path.exists():
+        try:
+            legacy_path.replace(checker_path)
+        except Exception:
+            # If rename fails (e.g. permissions), fall back to copying.
+            write_text(checker_path, legacy_path.read_text(encoding="utf-8", errors="ignore"))
+
     if not checker_path.exists():
         write_text(checker_path, TEMPLATE_CHECKER)
 
@@ -101,7 +111,7 @@ def cmd_change_start(args: argparse.Namespace) -> int:
     cmd_init(argparse.Namespace())
 
     root = Path.cwd()
-    checker_path = root / "OPTIMIZATION_CHECKER.md"
+    checker_path = root / "VIBESHIP_OPTIMIZER.md"
     change = create_change(
         project_root=root,
         checker_path=checker_path,
@@ -153,7 +163,7 @@ def cmd_change_verify(args: argparse.Namespace) -> int:
     if args.apply:
         payload = apply_verified(
             project_root=root,
-            checker_path=root / "OPTIMIZATION_CHECKER.md",
+            checker_path=root / "VIBESHIP_OPTIMIZER.md",
             change_id=str(args.change_id),
             config=cfg,
             min_monitor_days=int(min_days),
@@ -191,7 +201,7 @@ def cmd_monitor_start(args: argparse.Namespace) -> int:
 def cmd_monitor_tick(args: argparse.Namespace) -> int:
     root = Path.cwd()
     cmd_init(argparse.Namespace())
-    checker_path = root / "OPTIMIZATION_CHECKER.md"
+    checker_path = root / "VIBESHIP_OPTIMIZER.md"
     res = tick_monitor(project_root=root, checker_path=checker_path, force=bool(args.force))
     print(json.dumps(res, indent=2))
     return 0
@@ -239,7 +249,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def cmd_review_bundle(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    out = Path(args.out) if args.out else (root / ".vibeship_optimizer" / "review_bundles" / f"{args.change_id}.md")
+    out = Path(args.out) if args.out else (root / ".vibeship-optimizer" / "review_bundles" / f"{args.change_id}.md")
     p = build_review_bundle(project_root=root, change_id=str(args.change_id), out_path=out)
     print(json.dumps({"wrote": str(p)}, indent=2))
     return 0
@@ -312,7 +322,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="vibeship-optimizer", description="vibeship-optimizer: safe optimization workflow (snapshot + compare + verify)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    sp = sub.add_parser("init", help="Create .vibeship_optimizer config and OPTIMIZATION_CHECKER.md template")
+    sp = sub.add_parser("init", help="Create .vibeship-optimizer config and VIBESHIP_OPTIMIZER.md template")
     sp.set_defaults(func=cmd_init)
 
     sp = sub.add_parser("snapshot", help="Capture a snapshot (sizes, timings, probes)")
@@ -330,7 +340,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("change", help="Track an optimization as a durable change record")
     sub2 = sp.add_subparsers(dest="change_cmd", required=True)
 
-    sp2 = sub2.add_parser("start", help="Create a change record and append it to OPTIMIZATION_CHECKER.md")
+    sp2 = sub2.add_parser("start", help="Create a change record and append it to VIBESHIP_OPTIMIZER.md")
     sp2.add_argument("--title", required=True)
     sp2.add_argument("--hypothesis", default="")
     sp2.add_argument("--risk", default="")
@@ -347,7 +357,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp2.add_argument("--min-monitor-days", type=int, default=-1, help="If -1, use config verification.min_monitor_days")
     sp2.add_argument("--require-clean-git", action="store_true", help="If set, override config verification.require_clean_git")
     sp2.add_argument("--summary", default="", help="Summary to append when applying verified")
-    sp2.add_argument("--apply", action="store_true", help="Actually mark verified + append to OPTIMIZATION_CHECKER.md")
+    sp2.add_argument("--apply", action="store_true", help="Actually mark verified + append to VIBESHIP_OPTIMIZER.md")
     sp2.set_defaults(func=cmd_change_verify)
 
     # Multi-day monitor
@@ -379,7 +389,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_preflight)
 
     # Doctor
-    sp = sub.add_parser("doctor", help="Repair/normalize vibeship-optimizer scaffolding (.vibeship_optimizer/config.json only)")
+    sp = sub.add_parser("doctor", help="Repair/normalize vibeship-optimizer scaffolding (.vibeship-optimizer/config.json only)")
     sp.add_argument("--apply", action="store_true", help="Write changes (otherwise dry-run)")
     sp.set_defaults(func=cmd_doctor)
 

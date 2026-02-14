@@ -1,6 +1,6 @@
 ---
 name: vibeship-optimizer
-description: Safe, rollback-friendly optimization workflow for any codebase: capture before/after snapshots, compare performance/size/health probes, and maintain a multi-day verification log. Use in OpenClaw when a user wants to optimize a project without breaking it, wants commit-per-change rollbacks, or wants a living OPTIMIZATION_CHECKER.md validation document.
+description: Safe, rollback-friendly optimization workflow for any codebase: capture before/after snapshots, compare performance/size/health probes, and maintain a multi-day verification log. Use in OpenClaw when a user wants to optimize a project without breaking it, wants commit-per-change rollbacks, or wants a living VIBESHIP_OPTIMIZER.md validation document.
 ---
 
 # vibeship-optimizer
@@ -12,7 +12,7 @@ Use the `vibeship-optimizer` CLI from this repo to run a Carmack-style optimizat
 1) Initialize templates:
 - `python -m vibeship_optimizer init`
 
-2) Start a tracked change (appends a section into `OPTIMIZATION_CHECKER.md`):
+2) Start a tracked change (appends a section into `VIBESHIP_OPTIMIZER.md`):
 - `python -m vibeship_optimizer change start --title "<change title>" --risk "<risk>" --rollback "git revert <sha>"`
 
 3) Take baseline snapshot:
@@ -34,7 +34,7 @@ Use the `vibeship-optimizer` CLI from this repo to run a Carmack-style optimizat
 2) Run once per day:
 - `python -m vibeship_optimizer monitor tick`
 
-This appends “Verification update” blocks to `OPTIMIZATION_CHECKER.md` and stores reports under `.vibeship_optimizer/reports/`.
+This appends “Verification update” blocks to `VIBESHIP_OPTIMIZER.md` and stores reports under `.vibeship-optimizer/reports/`.
 
 ## Preflight + hallucination protections
 
@@ -55,7 +55,7 @@ This appends “Verification update” blocks to `OPTIMIZATION_CHECKER.md` and s
 
 Review attestations are **required by default** (config `review.require_attestation=true`).
 If you want to relax this, set:
-- `.vibeship_optimizer/config.yml` (or `.vibeship_optimizer/config.json`) → `review.require_attestation: false`
+- `.vibeship-optimizer/config.yml` (or `.vibeship-optimizer/config.json`) → `review.require_attestation: false`
 
 ## Read-only analyzers (safe)
 

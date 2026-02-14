@@ -109,7 +109,7 @@ def preflight(
                 level="warn",
                 code="TIMINGS_EMPTY",
                 message="No timings configured (no commands will be timed).",
-                hint="Edit .vibeship_optimizer/config.json and set timings[].cmd to your test/build commands.",
+                hint="Edit .vibeship-optimizer/config.json and set timings[].cmd to your test/build commands.",
             )
         )
     else:

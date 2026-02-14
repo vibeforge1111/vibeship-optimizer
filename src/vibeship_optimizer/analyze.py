@@ -13,7 +13,7 @@ from .questionnaire import detect_languages, questions_from_report, select_quest
 
 DEFAULT_EXCLUDE_DIRS = {
     ".git",
-    ".vibeship_optimizer",
+    ".vibeship-optimizer",
     ".venv",
     "venv",
     "node_modules",

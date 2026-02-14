@@ -1,4 +1,4 @@
-.vibeship_optimizer/
+.vibeship-optimizer/
 __pycache__/
 *.pyc
 .venv/

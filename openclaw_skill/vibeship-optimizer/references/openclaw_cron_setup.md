@@ -45,4 +45,4 @@ This sets up an isolated job that runs:
 Notes:
 - `--min-monitor-days -1` means: use config `verification.min_monitor_days`.
 - Preflight enforces review attestation by default.
-- For noisy runs, set `--no-deliver` and check `.vibeship_optimizer/reports/` later.
+- For noisy runs, set `--no-deliver` and check `.vibeship-optimizer/reports/` later.

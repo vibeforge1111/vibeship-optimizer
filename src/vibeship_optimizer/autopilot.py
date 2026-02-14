@@ -22,7 +22,7 @@ def autopilot_tick(*, project_root: Path, change_id: str, force: bool = False) -
     """
 
     cfg, _cfg_path = load_config_for_project(project_root)
-    checker_path = project_root / "OPTIMIZATION_CHECKER.md"
+    checker_path = project_root / "VIBESHIP_OPTIMIZER.md"
 
     monitor_res = tick_monitor(project_root=project_root, checker_path=checker_path, force=force)
 

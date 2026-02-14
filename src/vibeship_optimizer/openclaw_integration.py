@@ -64,7 +64,7 @@ def build_cron_add_args(spec: CronSpec) -> list[str]:
         f"(2) python -m vibeship_optimizer autopilot tick --change-id {spec.change_id} --force --format json. "
         "If verify.ok==true: output NO_REPLY. "
         "If verify.failures contains only 'insufficient monitor ticks' (pending days): output NO_REPLY. "
-        "Otherwise: output a concise summary + point to .vibeship_optimizer/reports/."
+        "Otherwise: output a concise summary + point to .vibeship-optimizer/reports/."
     )
 
     parts: list[str] = [

@@ -37,8 +37,8 @@ Engineers/ops can wire deeper probes, richer commands, and scheduled monitoring.
 
 vibeship-optimizer creates three kinds of evidence:
 
-1) **A logbook**: `OPTIMIZATION_CHECKER.md`
-2) **Snapshots**: `.vibeship_optimizer/snapshots/*.json`
+1) **A logbook**: `VIBESHIP_OPTIMIZER.md`
+2) **Snapshots**: `.vibeship-optimizer/snapshots/*.json`
 3) **Reports** (markdown) you can read/share
 
 You only “declare success” when the evidence says it’s real.
@@ -98,8 +98,8 @@ python -m vibeship_optimizer init
 ```
 
 This creates:
-- `OPTIMIZATION_CHECKER.md` (your logbook)
-- `.vibeship_optimizer/` (snapshots, config)
+- `VIBESHIP_OPTIMIZER.md` (your logbook)
+- `.vibeship-optimizer/` (snapshots, config)
 
 ### Step 2 — Start a change entry (what are we trying to improve?)
 
@@ -132,8 +132,8 @@ python -m vibeship_optimizer snapshot --label after
 
 ```bash
 python -m vibeship_optimizer compare \
-  --before .vibeship_optimizer/snapshots/<before>.json \
-  --after  .vibeship_optimizer/snapshots/<after>.json \
+  --before .vibeship-optimizer/snapshots/<before>.json \
+  --after  .vibeship-optimizer/snapshots/<after>.json \
   --out reports/vibeship_optimizer_compare.md
 ```
 
@@ -203,8 +203,8 @@ Security note: **never paste secrets/tokens** into the bundle.
 vibeship-optimizer looks for config in:
 
 - `vibeship_optimizer.yml` / `vibeship_optimizer.yaml` (project root)
-- `.vibeship_optimizer/config.yml` / `.vibeship_optimizer/config.yaml`
-- `.vibeship_optimizer/config.json`
+- `.vibeship-optimizer/config.yml` / `.vibeship-optimizer/config.yaml`
+- `.vibeship-optimizer/config.json`
 
 ---
 
@@ -214,7 +214,7 @@ vibeship-optimizer looks for config in:
 - It runs only commands you explicitly configure.
 - It encourages one-change-per-commit and a rollback path.
 - The repo is set up to ignore local artifacts:
-  - `.vibeship_optimizer/`
+  - `.vibeship-optimizer/`
   - `reports/`
   - `.venv/`
 
@@ -225,7 +225,7 @@ If you’re publishing reports, **check them for secrets** before sharing.
 ## Repo layout
 
 - `src/vibeship_optimizer/` — CLI + core logic
-- `OPTIMIZATION_CHECKER.md` — logbook template
+- `VIBESHIP_OPTIMIZER.md` — logbook template
 - `openclaw_skill/` — optional OpenClaw skill wrapper
 
 ---

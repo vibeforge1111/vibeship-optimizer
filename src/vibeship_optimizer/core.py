@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
-DEFAULT_DIR = Path(".vibeship_optimizer")
+DEFAULT_DIR = Path(".vibeship-optimizer")
 SNAPSHOT_DIR = DEFAULT_DIR / "snapshots"
 
 
