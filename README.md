@@ -101,6 +101,10 @@ This creates:
 - `VIBESHIP_OPTIMIZER.md` (your logbook)
 - `.vibeship-optimizer/` (snapshots, config)
 
+Notes:
+- If you already have an older `OPTIMIZATION_CHECKER.md`, `init` will try to migrate it to `VIBESHIP_OPTIMIZER.md`.
+- The tool will use `.vibeship-optimizer/` by default, but will also detect and reuse legacy `.vibeship_optimizer/` if that’s where your project’s existing state lives.
+
 ### Step 2 — Start a change entry (what are we trying to improve?)
 
 ```bash
@@ -137,12 +141,18 @@ python -m vibeship_optimizer compare \
   --out reports/vibeship_optimizer_compare.md
 ```
 
+Notes:
+- Prefer using the exact paths printed by `snapshot` (copy/paste them).
+- `compare` is strict: missing/invalid snapshot JSON will fail instead of silently producing an empty diff.
+
 ### Step 7 — Monitor over days (optional but recommended)
 
 ```bash
 python -m vibeship_optimizer monitor start --change-id <chg-id> --days 5
 python -m vibeship_optimizer monitor tick
 ```
+
+This writes daily reports under the state dir (for example: `.vibeship-optimizer/reports/`) and appends a short “verification update” block into `VIBESHIP_OPTIMIZER.md`.
 
 ---
 
@@ -166,6 +176,16 @@ python -m vibeship_optimizer openclaw cron-setup \
   --cron "0 7 * * *" --tz "Asia/Dubai" \
   --channel telegram --to "<chat_id>"
 ```
+
+### Autopilot (cron-friendly)
+
+For OpenClaw cron jobs, `autopilot tick` is designed to be a single command that returns a single JSON payload:
+
+```bash
+python -m vibeship_optimizer autopilot tick --change-id <chg-id> --force --format json
+```
+
+If a monitor is not active, it returns `monitor.skipped=true` with `reason=no_active_monitor` (instead of crashing), so your automation can decide whether to start monitoring or just alert.
 
 ---
 
