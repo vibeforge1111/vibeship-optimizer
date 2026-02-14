@@ -121,6 +121,7 @@ It documents the safe workflow (change logbook + snapshots + multi-day monitor).
 ## Roadmap
 
 - language-specific modules (Python/Node/Go) for unused-dep hints
+- guided optimization question sets (by language + intent)
 - service health probes + latency budgets
 - multi-day monitoring helper
 - OpenClaw skill packaging

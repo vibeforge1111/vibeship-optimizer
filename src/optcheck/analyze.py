@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .core import DEFAULT_DIR, dir_size_bytes, iso_now, write_text
+from .questionnaire import detect_languages, questions_from_report, select_questions
 
 
 DEFAULT_EXCLUDE_DIRS = {
@@ -124,6 +125,7 @@ def python_unused_dep_hints(
     *,
     project_root: Path,
     top_n_files: int = 2000,
+    ignore_deps: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     """Naive unused-dependency hints.
 
@@ -142,9 +144,13 @@ def python_unused_dep_hints(
 
     imports = _collect_import_roots(py_files, project_root)
 
+    ignore = {str(x).strip().lower() for x in (ignore_deps or []) if str(x).strip()}
+
     maybe_unused = []
     for d in deps:
         # some deps have different import roots; we don't try to map them here.
+        if str(d).strip().lower() in ignore:
+            continue
         root = d.split("_")[0]
         if root and root not in imports and d not in imports:
             maybe_unused.append(d)
@@ -175,6 +181,12 @@ def render_analyze_markdown(report: Dict[str, Any]) -> str:
         lines.append(f"- `{row.get('path')}`: {row.get('bytes')} bytes")
     lines.append("")
 
+    # Guided questions
+    try:
+        lines.append(questions_from_report(report))
+    except Exception:
+        pass
+
     py = report.get("python_unused_dep_hints")
     if isinstance(py, dict) and py:
         lines.append("## Python: unused dependency hints (heuristic)\n")
@@ -197,6 +209,7 @@ def analyze_project(
     *,
     project_root: Path,
     out_md: Optional[Path] = None,
+    config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     # Keep it fast + safe.
     candidates = [
@@ -216,16 +229,39 @@ def analyze_project(
     ]
     rel_dirs = [d for d in candidates if (project_root / d).exists()]
 
+    cfg = config if isinstance(config, dict) else {}
+    project_cfg = cfg.get("project") if isinstance(cfg, dict) else {}
+
+    languages = set(project_cfg.get("languages") or []) if isinstance(project_cfg, dict) else set()
+    if not languages:
+        languages = detect_languages(project_root)
+
+    intents = list(project_cfg.get("intents") or []) if isinstance(project_cfg, dict) else []
+
     report: Dict[str, Any] = {
         "schema": "optcheck.analyze.v1",
         "generated_at": iso_now(),
         "project_root": str(project_root),
+        "languages_detected": sorted({str(x) for x in languages}),
+        "intents": intents,
         "dir_sizes": directory_sizes(root=project_root, rel_dirs=rel_dirs),
         "largest_files": largest_files(root=project_root, top_n=25),
+        "questions": [
+            {
+                "id": q.id,
+                "text": q.text,
+                "tags": sorted(list(q.tags)),
+                "intents": sorted(list(q.intents)),
+            }
+            for q in select_questions(languages=languages, intents=intents)
+        ],
     }
 
     if (project_root / "pyproject.toml").exists():
-        report["python_unused_dep_hints"] = python_unused_dep_hints(project_root=project_root)
+        ignore = []
+        if isinstance(project_cfg, dict):
+            ignore = list(project_cfg.get("python_ignore_deps") or [])
+        report["python_unused_dep_hints"] = python_unused_dep_hints(project_root=project_root, ignore_deps=ignore)
 
     if out_md:
         write_text(out_md, render_analyze_markdown(report))

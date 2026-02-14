@@ -208,6 +208,12 @@ def default_config() -> Dict[str, Any]:
             "min_monitor_days": 3,
             "require_clean_git": False,
         },
+        "project": {
+            "goals": [],
+            "intents": [],
+            "languages": [],
+            "python_ignore_deps": ["pyyaml"],
+        },
     }
 
 

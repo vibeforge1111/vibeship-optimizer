@@ -209,7 +209,8 @@ def cmd_monitor_status(args: argparse.Namespace) -> int:
 def cmd_analyze(args: argparse.Namespace) -> int:
     root = Path.cwd()
     out = Path(args.out) if args.out else None
-    report = analyze_project(project_root=root, out_md=out)
+    cfg, _cfg_path = load_config_for_project(root)
+    report = analyze_project(project_root=root, out_md=out, config=cfg)
     if out:
         print(json.dumps({"wrote": str(out)}, indent=2))
     else:
