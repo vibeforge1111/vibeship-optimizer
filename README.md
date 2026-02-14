@@ -76,11 +76,10 @@ python -m optcheck snapshot --label before
 
 ## OpenClaw integration
 
-This repo will include an optional OpenClaw skill directory (`openclaw_skill/`) so you can:
-- run `optcheck snapshot` on a schedule
-- post diffs into your OpenClaw workspace checker doc
+This repo includes an optional OpenClaw skill:
+- `openclaw_skill/optimization-checker/SKILL.md`
 
-(We’ll wire this up as we iterate.)
+It documents the safe workflow (change logbook + snapshots + multi-day monitor).
 
 ## Safety
 
