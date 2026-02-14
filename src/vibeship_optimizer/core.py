@@ -88,10 +88,21 @@ def write_text(path: Path, text: str) -> None:
 
 
 def read_json(path: Path) -> Dict[str, Any]:
+    """Read a JSON object from disk.
+
+    This is intentionally strict: callers should not proceed with empty defaults
+    when evidence/config inputs are missing or corrupted.
+    """
+    text = read_text(path)  # may raise FileNotFoundError, etc.
     try:
-        return json.loads(read_text(path))
-    except Exception:
-        return {}
+        data = json.loads(text)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"invalid JSON in {path}: {e}") from e
+
+    if not isinstance(data, dict):
+        raise ValueError(f"expected JSON object in {path}, got {type(data).__name__}")
+
+    return data
 
 
 def write_json(path: Path, data: Dict[str, Any]) -> None:

@@ -147,8 +147,16 @@ def tick_monitor(
     _cfg, cfg_path = load_config_for_project(project_root)
     snap_path = snapshot(project_root=project_root, label=f"day{day_index}", config_path=cfg_path)
 
-    before = read_json(Path(state.baseline_snapshot))
-    after = read_json(snap_path)
+    bpath = Path(state.baseline_snapshot)
+    if not bpath.is_absolute():
+        bpath = project_root / bpath
+
+    apath = snap_path
+    if not apath.is_absolute():
+        apath = project_root / apath
+
+    before = read_json(bpath)
+    after = read_json(apath)
     diff = compare_snapshots(before, after)
     md = render_compare_markdown(diff)
 

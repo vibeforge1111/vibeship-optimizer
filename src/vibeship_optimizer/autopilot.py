@@ -24,9 +24,29 @@ def autopilot_tick(*, project_root: Path, change_id: str, force: bool = False) -
     cfg, _cfg_path = load_config_for_project(project_root)
     checker_path = project_root / "VIBESHIP_OPTIMIZER.md"
 
-    monitor_res = tick_monitor(project_root=project_root, checker_path=checker_path, force=force)
+    monitor_res: Dict[str, Any]
+    try:
+        monitor_res = tick_monitor(project_root=project_root, checker_path=checker_path, force=force)
+    except Exception as e:
+        msg = str(e)
+        reason = "no_active_monitor" if "No active monitor" in msg else "error"
+        monitor_res = {"skipped": True, "reason": reason, "error": msg[:400]}
 
-    preflight_report = preflight(project_root=project_root, out_md=None, change_id=change_id)
+    preflight_report: Dict[str, Any]
+    try:
+        preflight_report = preflight(project_root=project_root, out_md=None, change_id=change_id)
+    except Exception as e:
+        preflight_report = {
+            "worst_level": "fail",
+            "findings": [
+                {
+                    "level": "fail",
+                    "code": "PREFLIGHT_ERROR",
+                    "message": str(e)[:400],
+                    "hint": "",
+                }
+            ],
+        }
 
     vcfg = cfg.get("verification") if isinstance(cfg, dict) else {}
     min_days = int((vcfg or {}).get("min_monitor_days", 3) or 3)
@@ -62,7 +82,8 @@ def render_autopilot_summary(payload: Dict[str, Any]) -> str:
     lines = []
     lines.append(f"vibeship-optimizer autopilot tick: {change_id}")
     if mon.get("skipped"):
-        lines.append(f"- monitor: skipped ({mon.get('reason')})")
+        extra = f" err={mon.get('error')}" if mon.get("error") else ""
+        lines.append(f"- monitor: skipped ({mon.get('reason')}){extra}")
     else:
         lines.append(f"- monitor: day={mon.get('day')} report={mon.get('report')}")
 

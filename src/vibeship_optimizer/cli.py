@@ -80,7 +80,11 @@ def cmd_init(args: argparse.Namespace) -> int:
 def cmd_snapshot(args: argparse.Namespace) -> int:
     root = Path.cwd()
     _cfg, cfg_path = load_config_for_project(root)
-    out = snapshot(project_root=root, label=str(args.label or "snapshot"), config_path=cfg_path)
+    try:
+        out = snapshot(project_root=root, label=str(args.label or "snapshot"), config_path=cfg_path)
+    except Exception as e:
+        print(f"error: snapshot failed: {e}", file=sys.stderr)
+        return 2
 
     # Backward-compatible: stdout stays as a single path line for easy scripting.
     print(str(out))
@@ -114,7 +118,14 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
 def cmd_compare(args: argparse.Namespace) -> int:
     before_path = Path(args.before)
     after_path = Path(args.after)
-    diff_out = compare_snapshots(read_json(before_path), read_json(after_path))
+    try:
+        before = read_json(before_path)
+        after = read_json(after_path)
+    except Exception as e:
+        print(f"error: failed to read snapshot JSON: {e}", file=sys.stderr)
+        return 2
+
+    diff_out = compare_snapshots(before, after)
     md = render_compare_markdown(diff_out)
 
     if args.out:
@@ -215,33 +226,45 @@ def cmd_change_verify(args: argparse.Namespace) -> int:
 def cmd_monitor_start(args: argparse.Namespace) -> int:
     root = Path.cwd()
     cmd_init(argparse.Namespace())
-    path = start_monitor(
-        project_root=root,
-        change_id=str(args.change_id),
-        baseline_snapshot=str(args.baseline) if args.baseline else None,
-        days=int(args.days),
-    )
-    print(json.dumps({"monitor": str(path)}, indent=2))
-    return 0
+    try:
+        path = start_monitor(
+            project_root=root,
+            change_id=str(args.change_id),
+            baseline_snapshot=str(args.baseline) if args.baseline else None,
+            days=int(args.days),
+        )
+        print(json.dumps({"monitor": str(path)}, indent=2))
+        return 0
+    except Exception as e:
+        print(json.dumps({"ok": False, "error": str(e)}, indent=2))
+        return 2
 
 
 def cmd_monitor_tick(args: argparse.Namespace) -> int:
     root = Path.cwd()
     cmd_init(argparse.Namespace())
     checker_path = root / "VIBESHIP_OPTIMIZER.md"
-    res = tick_monitor(project_root=root, checker_path=checker_path, force=bool(args.force))
-    print(json.dumps(res, indent=2))
-    return 0
+    try:
+        res = tick_monitor(project_root=root, checker_path=checker_path, force=bool(args.force))
+        print(json.dumps(res, indent=2))
+        return 0
+    except Exception as e:
+        print(json.dumps({"ok": False, "error": str(e)}, indent=2))
+        return 2
 
 
 def cmd_monitor_status(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    state = load_monitor(root)
-    if not state:
-        print(json.dumps({"active": False}, indent=2))
+    try:
+        state = load_monitor(root)
+        if not state:
+            print(json.dumps({"active": False}, indent=2))
+            return 0
+        print(json.dumps({"active": True, **state.to_dict()}, indent=2))
         return 0
-    print(json.dumps({"active": True, **state.to_dict()}, indent=2))
-    return 0
+    except Exception as e:
+        print(json.dumps({"active": False, "error": str(e)}, indent=2))
+        return 2
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
