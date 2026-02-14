@@ -7,10 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .core import DEFAULT_DIR, iso_now, write_json, write_text
-
-
-CHANGES_DIR = DEFAULT_DIR / "changes"
+from .core import iso_now, resolve_state_dir, write_json, write_text
 
 
 def _slug(text: str, max_len: int = 48) -> str:
@@ -27,11 +24,12 @@ def new_change_id(title: str) -> str:
 
 
 def change_path(project_root: Path, change_id: str) -> Path:
-    return (project_root / CHANGES_DIR / f"{change_id}.json").resolve()
+    changes_dir = resolve_state_dir(project_root) / "changes"
+    return (project_root / changes_dir / f"{change_id}.json").resolve()
 
 
 def list_changes(project_root: Path) -> List[Path]:
-    d = (project_root / CHANGES_DIR)
+    d = (project_root / (resolve_state_dir(project_root) / "changes"))
     if not d.exists():
         return []
     return sorted(d.glob("chg-*.json"), key=lambda p: p.name)
@@ -45,6 +43,39 @@ def load_change(path: Path) -> Dict[str, Any]:
     except Exception:
         pass
     return {}
+
+
+def update_change(
+    *,
+    project_root: Path,
+    change_id: str,
+    updates: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Update a change record in-place.
+
+    Intended for attaching evidence (commit sha, snapshot_before/after paths)
+    from CLI commands in an automation-friendly way (OpenClaw cron, etc).
+    """
+    if not change_id:
+        raise ValueError("change_id is required")
+    if not isinstance(updates, dict) or not updates:
+        raise ValueError("updates is required")
+
+    p = change_path(project_root, change_id)
+    if not p.exists():
+        raise FileNotFoundError(f"change record not found: {p}")
+
+    ch = load_change(p)
+    if not isinstance(ch, dict) or ch.get("change_id") != change_id:
+        raise ValueError(f"invalid change record: {p}")
+
+    for k, v in updates.items():
+        # Keep it simple: the change record is user-owned JSON, but we only
+        # write JSON-serializable primitives/structures here.
+        ch[k] = v
+
+    write_json(p, ch)
+    return ch
 
 
 def append_change_to_checker(*, checker_path: Path, change: Dict[str, Any]) -> None:

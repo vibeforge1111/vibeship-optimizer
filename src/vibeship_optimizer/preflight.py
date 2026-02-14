@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from .analyze import analyze_project
-from .core import DEFAULT_DIR, SNAPSHOT_DIR, git_info, iso_now, write_text
+from .core import git_info, iso_now, resolve_state_dir, write_text
 from .review import attestation_mode_ok, attestation_path, load_attestation
 
 
@@ -32,12 +32,8 @@ def _level_rank(level: str) -> int:
 
 
 def _snapshots_exist(project_root: Path) -> bool:
-    d = project_root / SNAPSHOT_DIR
+    d = project_root / (resolve_state_dir(project_root) / "snapshots")
     return d.exists() and any(d.glob("*.json"))
-
-
-def _config_path(project_root: Path) -> Path:
-    return project_root / DEFAULT_DIR / "config.json"
 
 
 def preflight(
@@ -109,7 +105,7 @@ def preflight(
                 level="warn",
                 code="TIMINGS_EMPTY",
                 message="No timings configured (no commands will be timed).",
-                hint="Edit .vibeship-optimizer/config.json and set timings[].cmd to your test/build commands.",
+                hint="Edit your vibeship-optimizer config (usually .vibeship-optimizer/config.yml) and set timings[].cmd to your test/build commands.",
             )
         )
     else:

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .core import DEFAULT_DIR, git_info, iso_now, write_json, write_text
+from .core import git_info, iso_now, write_json, write_text
 from .logbook import change_path, load_change
 from .review import attestation_mode_ok, attestation_path, load_attestation
 

@@ -6,13 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .core import DEFAULT_DIR, SNAPSHOT_DIR, compare_snapshots, iso_now, read_json, render_compare_markdown, snapshot, write_json, write_text
+from .core import compare_snapshots, iso_now, read_json, render_compare_markdown, resolve_state_dir, snapshot, write_json, write_text
 from .configio import load_config_for_project
 from .logbook import change_path, load_change
-
-
-MONITOR_PATH = DEFAULT_DIR / "monitor.json"
-REPORTS_DIR = DEFAULT_DIR / "reports"
 
 
 def _utc_date() -> str:
@@ -20,7 +16,7 @@ def _utc_date() -> str:
 
 
 def _latest_snapshot_path(project_root: Path) -> Optional[Path]:
-    d = project_root / SNAPSHOT_DIR
+    d = project_root / (resolve_state_dir(project_root) / "snapshots")
     if not d.exists():
         return None
     snaps = sorted(d.glob("*.json"), key=lambda p: p.name)
@@ -80,7 +76,7 @@ class MonitorState:
 
 
 def load_monitor(project_root: Path) -> Optional[MonitorState]:
-    path = (project_root / MONITOR_PATH)
+    path = project_root / (resolve_state_dir(project_root) / "monitor.json")
     if not path.exists():
         return None
     data = read_json(path)
@@ -93,7 +89,7 @@ def load_monitor(project_root: Path) -> Optional[MonitorState]:
 
 
 def save_monitor(project_root: Path, state: MonitorState) -> Path:
-    path = (project_root / MONITOR_PATH)
+    path = project_root / (resolve_state_dir(project_root) / "monitor.json")
     write_json(path, state.to_dict())
     return path
 
@@ -156,8 +152,9 @@ def tick_monitor(
     diff = compare_snapshots(before, after)
     md = render_compare_markdown(diff)
 
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    report_path = (project_root / REPORTS_DIR / f"{today}_day{day_index}_{state.change_id}.md").resolve()
+    reports_dir = resolve_state_dir(project_root) / "reports"
+    (project_root / reports_dir).mkdir(parents=True, exist_ok=True)
+    report_path = (project_root / reports_dir / f"{today}_day{day_index}_{state.change_id}.md").resolve()
     write_text(report_path, md)
 
     # Append an update to the checker doc (append-only, safe).

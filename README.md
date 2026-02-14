@@ -1,4 +1,4 @@
-# vibeship-optimizer
+﻿# vibeship-optimizer
 
 vibeship-optimizer is a **safe, rollback-friendly way to optimize anything** (a codebase, a service, an agent stack, an OpenClaw deployment) **without breaking it**.
 
@@ -38,7 +38,7 @@ Engineers/ops can wire deeper probes, richer commands, and scheduled monitoring.
 vibeship-optimizer creates three kinds of evidence:
 
 1) **A logbook**: `VIBESHIP_OPTIMIZER.md`
-2) **Snapshots**: `.vibeship-optimizer/snapshots/*.json`
+2) **Snapshots**: `.vibeship-optimizer/snapshots/*.json` (legacy: `.vibeship_optimizer/snapshots/*.json`)
 3) **Reports** (markdown) you can read/share
 
 You only “declare success” when the evidence says it’s real.
@@ -110,7 +110,7 @@ python -m vibeship_optimizer change start --title "Reduce memory usage"
 ### Step 3 — Capture a BEFORE snapshot
 
 ```bash
-python -m vibeship_optimizer snapshot --label before
+python -m vibeship_optimizer snapshot --label before --change-id <chg-id> --as before
 ```
 
 ### Step 4 — Make exactly ONE change
@@ -125,7 +125,7 @@ If you have git: commit it as 1 commit.
 ### Step 5 — Capture an AFTER snapshot
 
 ```bash
-python -m vibeship_optimizer snapshot --label after
+python -m vibeship_optimizer snapshot --label after --change-id <chg-id> --as after
 ```
 
 ### Step 6 — Compare and get a human-readable report
@@ -203,8 +203,9 @@ Security note: **never paste secrets/tokens** into the bundle.
 vibeship-optimizer looks for config in:
 
 - `vibeship_optimizer.yml` / `vibeship_optimizer.yaml` (project root)
-- `.vibeship-optimizer/config.yml` / `.vibeship-optimizer/config.yaml`
-- `.vibeship-optimizer/config.json`
+- `.vibeship-optimizer/config.yml` / `.vibeship-optimizer/config.yaml` (default)
+- `.vibeship-optimizer/config.json` (also supported)
+- Legacy compatibility: `.vibeship_optimizer/config.yml|.json`
 
 ---
 
@@ -233,3 +234,4 @@ If you’re publishing reports, **check them for secrets** before sharing.
 ## License
 
 MIT (see `LICENSE`).
+

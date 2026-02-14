@@ -1,12 +1,13 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from .core import DEFAULT_DIR, compare_snapshots, read_json, render_compare_markdown, snapshot, write_text, write_json
+from .core import compare_snapshots, git_info, read_json, render_compare_markdown, resolve_state_dir, snapshot, write_text, write_json
 from .configio import find_config_path, load_config_for_project, write_config
-from .logbook import create_change, list_changes, load_change
+from .logbook import create_change, list_changes, load_change, update_change
 from .monitor import load_monitor, start_monitor, tick_monitor
 from .analyze import analyze_project
 from .preflight import preflight
@@ -33,9 +34,9 @@ Recommended loop:
 
 1) `vibeship-optimizer init`
 2) `vibeship-optimizer change start --title "..."`
-3) `vibeship-optimizer snapshot --label before`
+3) `vibeship-optimizer snapshot --label before --change-id <chg-id> --as before`
 4) Make *one* optimization + commit
-5) `vibeship-optimizer snapshot --label after`
+5) `vibeship-optimizer snapshot --label after --change-id <chg-id> --as after`
 6) `vibeship-optimizer compare --before ... --after ... --out reports/...`
 7) Monitor for 1–7 days; update the change section with results.
 
@@ -46,7 +47,7 @@ Recommended loop:
 
 def cmd_init(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    opt_dir = root / DEFAULT_DIR
+    opt_dir = root / resolve_state_dir(root)
     opt_dir.mkdir(parents=True, exist_ok=True)
 
     cfg_path = find_config_path(root)
@@ -80,7 +81,33 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     root = Path.cwd()
     _cfg, cfg_path = load_config_for_project(root)
     out = snapshot(project_root=root, label=str(args.label or "snapshot"), config_path=cfg_path)
+
+    # Backward-compatible: stdout stays as a single path line for easy scripting.
     print(str(out))
+
+    # Optional: attach evidence to a change record.
+    change_id = str(getattr(args, "change_id", "") or "").strip()
+    attach_as = str(getattr(args, "attach_as", "") or "").strip().lower()
+    if change_id:
+        if attach_as not in ("before", "after"):
+            print("error: when using --change-id, you must also provide --as before|after", file=sys.stderr)
+            return 2
+
+        updates = {}
+        if attach_as == "before":
+            updates["snapshot_before"] = str(out)
+        else:
+            updates["snapshot_after"] = str(out)
+            # Record commit sha for the change. Best-effort: empty if not a git repo.
+            updates["commit"] = str((git_info(root) or {}).get("commit") or "")
+
+        try:
+            update_change(project_root=root, change_id=change_id, updates=updates)
+            print(f"attached snapshot ({attach_as}) to change_id={change_id}", file=sys.stderr)
+        except Exception as e:
+            print(f"error: failed to attach snapshot to change record: {e}", file=sys.stderr)
+            return 2
+
     return 0
 
 
@@ -249,7 +276,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def cmd_review_bundle(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    out = Path(args.out) if args.out else (root / ".vibeship-optimizer" / "review_bundles" / f"{args.change_id}.md")
+    state_dir = root / resolve_state_dir(root)
+    out = Path(args.out) if args.out else (state_dir / "review_bundles" / f"{args.change_id}.md")
     p = build_review_bundle(project_root=root, change_id=str(args.change_id), out_path=out)
     print(json.dumps({"wrote": str(p)}, indent=2))
     return 0
@@ -327,6 +355,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("snapshot", help="Capture a snapshot (sizes, timings, probes)")
     sp.add_argument("--label", default="", help="label for snapshot")
+    sp.add_argument("--change-id", default="", help="Optional: attach this snapshot to a change record")
+    sp.add_argument("--as", dest="attach_as", default="", choices=["before", "after"], help="Attach role when using --change-id")
     sp.set_defaults(func=cmd_snapshot)
 
     sp = sub.add_parser("compare", help="Compare two snapshots")
@@ -389,7 +419,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_preflight)
 
     # Doctor
-    sp = sub.add_parser("doctor", help="Repair/normalize vibeship-optimizer scaffolding (.vibeship-optimizer/config.json only)")
+    sp = sub.add_parser(
+        "doctor",
+        help="Repair/normalize vibeship-optimizer scaffolding (config file only: .vibeship-optimizer/config.yml|.json)",
+    )
     sp.add_argument("--apply", action="store_true", help="Write changes (otherwise dry-run)")
     sp.set_defaults(func=cmd_doctor)
 
@@ -450,3 +483,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

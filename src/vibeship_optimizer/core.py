@@ -14,6 +14,61 @@ from typing import Any, Dict, List, Optional, Tuple
 DEFAULT_DIR = Path(".vibeship-optimizer")
 SNAPSHOT_DIR = DEFAULT_DIR / "snapshots"
 
+# Backward/forward compatibility:
+# Some projects use `.vibeship_optimizer/` (underscore) while others use
+# `.vibeship-optimizer/` (hyphen). We resolve per-project to avoid splitting
+# state across two folders (important for OpenClaw automation).
+STATE_DIR_CANDIDATES: tuple[Path, ...] = (
+    Path(".vibeship_optimizer"),
+    Path(".vibeship-optimizer"),
+)
+
+
+def resolve_state_dir(project_root: Path) -> Path:
+    """Pick the project's vibeship-optimizer state directory (relative path).
+
+    Preference rules:
+    - If one candidate has real state (config/changes/snapshots/monitor/etc), use it.
+    - If both are empty/nonexistent, default to `.vibeship_optimizer` for backward-compat.
+    """
+
+    def score(rel: Path) -> int:
+        d = project_root / rel
+        if not d.exists() or not d.is_dir():
+            return -1
+
+        s = 0
+        # config signal
+        for fn in ("config.yml", "config.yaml", "config.json"):
+            if (d / fn).exists():
+                s += 3
+                break
+        # state signal
+        if any((d / "changes").glob("chg-*.json")):
+            s += 2
+        if any((d / "snapshots").glob("*.json")):
+            s += 2
+        if (d / "monitor.json").exists():
+            s += 1
+        if (d / "reports").exists():
+            s += 1
+        if (d / "attestations").exists():
+            s += 1
+        if (d / "review_bundles").exists():
+            s += 1
+        return s
+
+    scored = [(score(rel), rel) for rel in STATE_DIR_CANDIDATES]
+    # best score first; tie-break uses candidate order (underscore first)
+    best = sorted(scored, key=lambda t: t[0], reverse=True)[0]
+    if best[0] >= 0:
+        return best[1]
+    return DEFAULT_DIR
+
+
+def snapshots_dir(project_root: Path) -> Path:
+    return resolve_state_dir(project_root) / "snapshots"
+
 
 def now_ts() -> float:
     return time.time()
@@ -327,10 +382,11 @@ def snapshot(
             res["error"] = str(e)[:300]
         snap["http"].append(res)
 
-    SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    snap_dir = snapshots_dir(project_root)
+    (project_root / snap_dir).mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
-    out = SNAPSHOT_DIR / f"{ts}_{_safe_token(label)}.json"
-    write_json(out, snap)
+    out = snap_dir / f"{ts}_{_safe_token(label)}.json"
+    write_json(project_root / out, snap)
     return out
 
 

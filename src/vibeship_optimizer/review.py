@@ -6,12 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .core import DEFAULT_DIR, git_info, iso_now, run_cmd, write_json, write_text
+from .core import git_info, iso_now, resolve_state_dir, run_cmd, write_json, write_text
 from .logbook import change_path, load_change
-
-
-ATTEST_DIR = DEFAULT_DIR / "attestations"
-BUNDLE_DIR = DEFAULT_DIR / "review_bundles"
 
 
 @dataclass
@@ -38,7 +34,8 @@ class ReviewAttestation:
 
 
 def attestation_path(project_root: Path, change_id: str) -> Path:
-    return (project_root / ATTEST_DIR / f"review_{change_id}.json").resolve()
+    att_dir = resolve_state_dir(project_root) / "attestations"
+    return (project_root / att_dir / f"review_{change_id}.json").resolve()
 
 
 def load_attestation(path: Path) -> Dict[str, Any]:
@@ -189,7 +186,8 @@ def build_review_bundle(
 
     # Save under .vibeship-optimizer by default if desired.
     try:
-        default_out = (project_root / BUNDLE_DIR / f"{_safe_file_token(change_id)}_{int(time.time())}.md").resolve()
+        bundle_dir = resolve_state_dir(project_root) / "review_bundles"
+        default_out = (project_root / bundle_dir / f"{_safe_file_token(change_id)}_{int(time.time())}.md").resolve()
         if default_out != out_path:
             default_out.parent.mkdir(parents=True, exist_ok=True)
             write_text(default_out, "\n".join(lines))

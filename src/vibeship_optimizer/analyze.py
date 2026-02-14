@@ -7,12 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-from .core import DEFAULT_DIR, dir_size_bytes, iso_now, write_text
+from .core import dir_size_bytes, iso_now, write_text
 from .questionnaire import detect_languages, questions_from_report, select_questions
 
 
 DEFAULT_EXCLUDE_DIRS = {
     ".git",
+    ".vibeship_optimizer",
     ".vibeship-optimizer",
     ".venv",
     "venv",

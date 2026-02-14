@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from .core import DEFAULT_DIR, default_config, read_text
+from .core import DEFAULT_DIR, default_config, read_text, resolve_state_dir
 
 
 CONFIG_CANDIDATES = [
@@ -13,6 +13,9 @@ CONFIG_CANDIDATES = [
     DEFAULT_DIR / "config.yml",
     DEFAULT_DIR / "config.yaml",
     DEFAULT_DIR / "config.json",
+    Path(".vibeship-optimizer") / "config.yml",
+    Path(".vibeship-optimizer") / "config.yaml",
+    Path(".vibeship-optimizer") / "config.json",
 ]
 
 
@@ -30,8 +33,8 @@ def find_config_path(project_root: Path) -> Path:
         p = (project_root / rel)
         if p.exists():
             return p
-    # default to YAML in new projects
-    return project_root / (DEFAULT_DIR / "config.yml")
+    # Default to YAML in the resolved state dir.
+    return project_root / (resolve_state_dir(project_root) / "config.yml")
 
 
 def _deep_merge(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:

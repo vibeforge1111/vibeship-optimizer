@@ -41,7 +41,8 @@ def doctor(
     """Repair/normalize vibeship-optimizer scaffolding.
 
     Safety:
-    - only touches .vibeship-optimizer/config.json (and creates .vibeship-optimizer/ dir)
+    - only touches the vibeship-optimizer config file (YAML/JSON) under the state dir
+      (e.g. .vibeship-optimizer/config.yml or .vibeship_optimizer/config.yml)
     - never edits project source code
     """
 
