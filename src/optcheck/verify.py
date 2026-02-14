@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from .core import DEFAULT_DIR, git_info, iso_now, write_json, write_text
 from .logbook import change_path, load_change
-from .review import attestation_path
+from .review import attestation_mode_ok, attestation_path, load_attestation
 
 
 @dataclass
@@ -72,14 +72,15 @@ def verify_change(
     # Review enforcement.
     review_cfg = config.get("review") if isinstance(config, dict) else {}
     require_att = bool((review_cfg or {}).get("require_attestation", False))
-    if require_att:
-        ap = attestation_path(project_root, change_id)
-        if not ap.exists():
-            failures.append("review attestation missing (review.require_attestation=true)")
+    ap = attestation_path(project_root, change_id)
+    if require_att and not ap.exists():
+        failures.append("review attestation missing (review.require_attestation=true)")
+    elif not ap.exists():
+        warnings.append("review attestation missing (recommended)")
     else:
-        ap = attestation_path(project_root, change_id)
-        if not ap.exists():
-            warnings.append("review attestation missing (recommended)")
+        att = load_attestation(ap)
+        if not attestation_mode_ok(config=config, attestation=att):
+            failures.append("review attestation reasoning_mode/tool not allowed (review.allowed_modes)")
 
     # Monitor evidence.
     min_days = max(0, int(min_monitor_days))

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .analyze import analyze_project
 from .core import DEFAULT_DIR, SNAPSHOT_DIR, git_info, iso_now, write_text
-from .review import attestation_path
+from .review import attestation_mode_ok, attestation_path, load_attestation
 
 
 @dataclass
@@ -168,7 +168,7 @@ def preflight(
                     level="fail",
                     code="REVIEW_ATTESTATION_MISSING",
                     message=f"Review attestation missing for change_id={change_id}.",
-                    hint="Run: optcheck review attest --change-id <id> --tool codex --reasoning-mode xhigh --model <model>",
+                    hint="Run: optcheck review bundle ... then optcheck review attest --tool codex --reasoning-mode xhigh ...",
                 )
             )
         elif not att_path.exists():
@@ -180,6 +180,17 @@ def preflight(
                     hint="Run: optcheck review bundle ... then optcheck review attest ...",
                 )
             )
+        else:
+            att = load_attestation(att_path)
+            if not attestation_mode_ok(config=cfg, attestation=att):
+                findings.append(
+                    Finding(
+                        level="fail" if bool((review_cfg or {}).get("enforce_recommended_modes", False)) else "warn",
+                        code="REVIEW_MODE_NOT_ALLOWED",
+                        message=f"Attested reasoning_mode='{att.get('reasoning_mode')}' not allowed for tool='{att.get('tool')}'.",
+                        hint="Use Codex reasoning_mode xhigh/high or Claude plan (per config review.allowed_modes).",
+                    )
+                )
 
     # --- Analyze report (read-only) ---
     analysis = analyze_project(project_root=project_root, out_md=None)

@@ -53,11 +53,17 @@ This appends “Verification update” blocks to `OPTIMIZATION_CHECKER.md` and s
 - Record the review as an attestation (so the checker can enforce it if configured):
   - `python -m optcheck review attest --change-id <chg-...> --tool codex --reasoning-mode xhigh --model "<model>" --reviewer "<name>"`
 
-To *enforce* review attestations in preflight, set:
-- `.optcheck/config.json` → `review.require_attestation=true`
+Review attestations are **required by default** (config `review.require_attestation=true`).
+If you want to relax this, set:
+- `.optcheck/config.yml` (or `.optcheck/config.json`) → `review.require_attestation: false`
 
 ## Read-only analyzers (safe)
 
 - `python -m optcheck analyze --out reports/optcheck_analyze.md`
 
 This produces bloat/size hints and naive “maybe unused dependency” hints (heuristic; do not auto-remove without verification).
+
+## Automation (OpenClaw cron)
+
+For scheduled daily verification ticks, see:
+- `references/openclaw_cron_setup.md`

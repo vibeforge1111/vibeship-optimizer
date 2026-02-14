@@ -41,6 +41,40 @@ def attestation_path(project_root: Path, change_id: str) -> Path:
     return (project_root / ATTEST_DIR / f"review_{change_id}.json").resolve()
 
 
+def load_attestation(path: Path) -> Dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+
+def attestation_mode_ok(*, config: Dict[str, Any], attestation: Dict[str, Any]) -> bool:
+    """Check attestation matches allowed reasoning modes for the tool.
+
+    Config keys:
+      review.enforce_recommended_modes: bool
+      review.allowed_modes: {codex:[...], claude:[...]}  # lowercase
+    """
+    review_cfg = config.get("review") if isinstance(config, dict) else {}
+    if not bool((review_cfg or {}).get("enforce_recommended_modes", False)):
+        return True
+
+    tool = str(attestation.get("tool") or "").strip().lower()
+    mode = str(attestation.get("reasoning_mode") or "").strip().lower()
+    allowed = ((review_cfg or {}).get("allowed_modes") or {})
+    if not isinstance(allowed, dict):
+        return True
+
+    allowed_list = allowed.get(tool)
+    if not isinstance(allowed_list, list) or not allowed_list:
+        return True
+
+    return mode in {str(x).strip().lower() for x in allowed_list if str(x).strip()}
+
+
 def write_attestation(
     *,
     project_root: Path,

@@ -70,11 +70,15 @@ optcheck monitor tick
 # run diligence checks before optimizing
 optcheck preflight --out reports/optcheck_preflight.md
 
-# (recommended) generate evidence bundle for LLM review + attest the review mode
+# (recommended; required by default in new configs) generate evidence bundle for LLM review + attest the review mode
 optcheck review bundle --change-id <chg-id> --out reports/optcheck_review_bundle.md
 optcheck review attest --change-id <chg-id> --tool codex --reasoning-mode xhigh --model "openai-codex/..." --reviewer "<name>"
-# optional enforcement during preflight:
+
+# preflight can enforce attestation (new default is require_attestation=true)
 optcheck preflight --change-id <chg-id> --out reports/optcheck_preflight.md
+
+# to relax enforcement:
+# edit your config and set: review.require_attestation: false
 
 # when you have enough evidence, mark the change verified (refuses if missing requirements)
 optcheck change verify --change-id <chg-id> --min-monitor-days 3

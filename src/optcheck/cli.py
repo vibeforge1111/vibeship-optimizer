@@ -51,6 +51,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     if not cfg_path.exists():
         # Minimal config: users edit commands they care about.
         cfg, _path = load_config_for_project(root)
+        # Ensure strict defaults are written for new projects.
+        cfg = {**cfg, **{"review": cfg.get("review"), "verification": cfg.get("verification")}}
         write_config(cfg_path, cfg)
 
     checker_path = root / "OPTIMIZATION_CHECKER.md"
@@ -139,14 +141,21 @@ def cmd_change_verify(args: argparse.Namespace) -> int:
 
     cfg, _cfg_path = load_config_for_project(root)
 
+    vcfg = cfg.get("verification") if isinstance(cfg, dict) else {}
+    default_days = int((vcfg or {}).get("min_monitor_days", 3) or 3)
+    min_days = default_days if int(args.min_monitor_days) < 0 else int(args.min_monitor_days)
+
+    default_clean = bool((vcfg or {}).get("require_clean_git", False))
+    require_clean = bool(args.require_clean_git) or default_clean
+
     if args.apply:
         payload = apply_verified(
             project_root=root,
             checker_path=root / "OPTIMIZATION_CHECKER.md",
             change_id=str(args.change_id),
             config=cfg,
-            min_monitor_days=int(args.min_monitor_days),
-            require_clean_git=bool(args.require_clean_git),
+            min_monitor_days=int(min_days),
+            require_clean_git=bool(require_clean),
             summary=str(args.summary or ""),
         )
         print(json.dumps(payload, indent=2))
@@ -157,8 +166,8 @@ def cmd_change_verify(args: argparse.Namespace) -> int:
         project_root=root,
         change_id=str(args.change_id),
         config=cfg,
-        min_monitor_days=int(args.min_monitor_days),
-        require_clean_git=bool(args.require_clean_git),
+        min_monitor_days=int(min_days),
+        require_clean_git=bool(require_clean),
     )
     print(json.dumps({"change_id": str(args.change_id), **result.to_dict()}, indent=2))
     return 0 if result.ok else 2
@@ -284,8 +293,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp2 = sub2.add_parser("verify", help="Check evidence and (optionally) mark change as VERIFIED")
     sp2.add_argument("--change-id", required=True)
-    sp2.add_argument("--min-monitor-days", type=int, default=3)
-    sp2.add_argument("--require-clean-git", action="store_true")
+    sp2.add_argument("--min-monitor-days", type=int, default=-1, help="If -1, use config verification.min_monitor_days")
+    sp2.add_argument("--require-clean-git", action="store_true", help="If set, override config verification.require_clean_git")
     sp2.add_argument("--summary", default="", help="Summary to append when applying verified")
     sp2.add_argument("--apply", action="store_true", help="Actually mark verified + append to OPTIMIZATION_CHECKER.md")
     sp2.set_defaults(func=cmd_change_verify)
