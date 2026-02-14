@@ -61,6 +61,9 @@ optcheck monitor start --change-id <chg-id> --days 5
 # run once per day (UTC) to append verification updates
 optcheck monitor tick
 
+# run diligence checks before optimizing
+optcheck preflight --out reports/optcheck_preflight.md
+
 # run read-only analyzers (bloat / maybe-unused deps)
 optcheck analyze --out reports/optcheck_analyze.md
 ```

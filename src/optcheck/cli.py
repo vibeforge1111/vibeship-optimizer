@@ -8,6 +8,7 @@ from .core import DEFAULT_DIR, compare_snapshots, read_json, render_compare_mark
 from .logbook import create_change, list_changes, load_change
 from .monitor import load_monitor, start_monitor, tick_monitor
 from .analyze import analyze_project
+from .preflight import preflight
 
 
 TEMPLATE_CHECKER = """# Optimization Checker
@@ -181,6 +182,17 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_preflight(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    out = Path(args.out) if args.out else None
+    report = preflight(project_root=root, out_md=out)
+    if out:
+        print(json.dumps({"wrote": str(out), "worst_level": report.get("worst_level")}, indent=2))
+    else:
+        print(json.dumps(report, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="optcheck", description="Optimization checker: snapshot + compare")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -236,6 +248,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("analyze", help="Read-only analyzers for bloat / unused-dep hints")
     sp.add_argument("--out", default="", help="Write markdown report to path")
     sp.set_defaults(func=cmd_analyze)
+
+    # Preflight
+    sp = sub.add_parser("preflight", help="Diligence checks before optimizing (safe, read-only)")
+    sp.add_argument("--out", default="", help="Write markdown report to path")
+    sp.set_defaults(func=cmd_preflight)
 
     return p
 
