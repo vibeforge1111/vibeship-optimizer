@@ -40,6 +40,9 @@ From your project root:
 # initialize templates + config
 optcheck init
 
+# start a tracked change (appends to OPTIMIZATION_CHECKER.md)
+optcheck change start --title "Bound log growth"
+
 # take a baseline snapshot
 optcheck snapshot --label before
 

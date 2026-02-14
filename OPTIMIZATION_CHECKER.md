@@ -8,15 +8,18 @@ This file is a living validation playbook.
 - Always capture **before/after** snapshots.
 - Monitor for a few days before marking verified.
 
+## Workflow
+
+Recommended loop:
+
+1) `optcheck init`
+2) `optcheck change start --title "..."`
+3) `optcheck snapshot --label before`
+4) Make *one* optimization + commit
+5) `optcheck snapshot --label after`
+6) `optcheck compare --before ... --after ... --out reports/...`
+7) Monitor for 1–7 days; update the change section with results.
+
 ## Optimization log
 
-### 2026-__-__
-1) <commit> — <what changed>
-- Hypothesis:
-- Risk:
-- Rollback:
-- Validation (today):
-- Validation (next 3 days):
-- Outcome:
-- Mark verified: [ ]
-
+(Entries are appended here by `optcheck change start`.)
