@@ -61,7 +61,7 @@ def build_cron_add_args(spec: CronSpec) -> list[str]:
     msg = (
         "Run vibeship-optimizer autopilot tick quietly (only alert on real problems). "
         f"Steps: (1) cd {spec.project_root}; "
-        f"(2) python -m vibeship_optimizer autopilot tick --change-id {spec.change_id} --force --format json. "
+        f"(2) python -m vibeship_optimizer autopilot tick --change-id {spec.change_id} --force --format json --ok-on-pending. "
         "If verify.ok==true: output NO_REPLY. "
         "If verify.failures contains only 'insufficient monitor ticks' (pending days): output NO_REPLY. "
         "Otherwise: output a concise summary + point to .vibeship_optimizer/ or .vibeship-optimizer/ reports/."

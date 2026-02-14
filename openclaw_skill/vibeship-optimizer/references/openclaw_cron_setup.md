@@ -10,7 +10,10 @@ This internally runs:
 - preflight (with change_id enforcement)
 - verify (dry-run)
 
-And exits non-zero if verification fails (ideal for cron alerting).
+By default it exits non-zero if verification fails (ideal for cron alerting).
+
+If you want cron to stay quiet while a change is simply "pending more monitor days", pass:
+- `--ok-on-pending`
 
 ## Recommended: generate a cron command via vibeship-optimizer
 
@@ -40,7 +43,7 @@ vibeship-optimizer openclaw cron-setup \
 ```
 
 This sets up an isolated job that runs:
-- `python -m vibeship_optimizer autopilot tick --change-id <CHANGE_ID>`
+- `python -m vibeship_optimizer autopilot tick --change-id <CHANGE_ID> --force --format json --ok-on-pending`
 
 Notes:
 - `--min-monitor-days -1` means: use config `verification.min_monitor_days`.

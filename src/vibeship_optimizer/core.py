@@ -29,7 +29,7 @@ def resolve_state_dir(project_root: Path) -> Path:
 
     Preference rules:
     - If one candidate has real state (config/changes/snapshots/monitor/etc), use it.
-    - If both are empty/nonexistent, default to `.vibeship_optimizer` for backward-compat.
+    - If both are empty/nonexistent, default to the canonical `.vibeship-optimizer`.
     """
 
     def score(rel: Path) -> int:

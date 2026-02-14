@@ -182,7 +182,7 @@ python -m vibeship_optimizer openclaw cron-setup \
 For OpenClaw cron jobs, `autopilot tick` is designed to be a single command that returns a single JSON payload:
 
 ```bash
-python -m vibeship_optimizer autopilot tick --change-id <chg-id> --force --format json
+python -m vibeship_optimizer autopilot tick --change-id <chg-id> --force --format json --ok-on-pending
 ```
 
 If a monitor is not active, it returns `monitor.skipped=true` with `reason=no_active_monitor` (instead of crashing), so your automation can decide whether to start monitoring or just alert.

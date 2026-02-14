@@ -6,3 +6,5 @@ dist/
 build/
 *.egg-info/
 reports/
+.pytest_cache/
+.pytest-tmp/

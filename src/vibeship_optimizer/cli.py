@@ -334,7 +334,22 @@ def cmd_autopilot_tick(args: argparse.Namespace) -> int:
 
     # exit non-zero if verify failed
     ok = bool(((payload.get("verify") or {}).get("ok")))
-    return 0 if ok else 2
+    if ok:
+        return 0
+
+    failures = ((payload.get("verify") or {}).get("failures") or [])
+    mon = payload.get("monitor") or {}
+    mon_reason = str(mon.get("reason") or "")
+
+    # "Pending" means only waiting for more monitor days, and we do have/expect a monitor.
+    pending_only = (
+        isinstance(failures, list)
+        and failures
+        and all(str(f).startswith("insufficient monitor ticks:") for f in failures)
+        and mon_reason not in ("no_active_monitor",)
+    )
+
+    return 0 if (bool(args.ok_on_pending) and pending_only) else 2
 
 
 def cmd_openclaw_cron_setup(args: argparse.Namespace) -> int:
@@ -475,6 +490,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp2.add_argument("--change-id", required=True)
     sp2.add_argument("--force", action="store_true", help="Force monitor tick even if already ran today (UTC)")
     sp2.add_argument("--format", default="text", choices=["text", "json"], help="Output format")
+    sp2.add_argument("--ok-on-pending", action="store_true", help="Exit 0 if only pending more monitor ticks (for cron)")
     sp2.set_defaults(func=cmd_autopilot_tick)
 
     # OpenClaw helper
