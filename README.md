@@ -1,132 +1,201 @@
-# optimization-checker
+# Vibeship Optimizer (optcheck)
 
-A **safe, rollback-friendly optimization workflow** for any codebase (and especially OpenClaw deployments):
+**Vibeship Optimizer** is a **safe, rollback-friendly optimization workflow** for any codebase (and especially services / agents / OpenClaw deployments).
 
-- Optimize “Carmack-style”: one change at a time, measurable, reversible.
-- Capture **before/after snapshots** (runtime, disk, commands, health probes).
-- Maintain a living **OPTIMIZATION_CHECKER.md** that tracks:
-  - what changed
-  - how to validate
-  - what the measured effect was
-  - when it was considered verified (after days of real use)
+It helps you do “Carmack-style” optimization:
 
-This repo provides:
+- one change at a time
+- measurable evidence (before/after)
+- reversible by default
+- verified over days of real usage
 
-- `optcheck` CLI (Python, minimal deps; YAML config supported)
-- templates: `OPTIMIZATION_CHECKER.md`
-- config formats supported:
-  - `optcheck.yml` / `optcheck.yaml` (project root)
-  - `.optcheck/config.yml` / `.optcheck/config.yaml`
-  - `.optcheck/config.json`
-- a snapshot+compare system that produces diffs as markdown reports
+This repo ships a small Python CLI called **`optcheck`**.
 
-## Philosophy
+---
 
-1. **One commit per feature/optimization.**
-2. Prefer **feature flags** and bounded knobs.
-3. Always keep a **revert path** (`git revert <sha>`).
-4. Measure **before** and **after**, then keep monitoring for a few days.
+## What it does
 
-## Install (dev)
+`optcheck` gives you a disciplined loop:
+
+1. **Log the intent** (what you’re changing + why)
+2. **Capture a baseline snapshot** (health probes, commands, perf counters, etc.)
+3. Make a **single optimization change** (ideally one commit)
+4. **Capture an after snapshot**
+5. **Compare + report** (markdown diffs)
+6. **Monitor over multiple days** (tick-based verification)
+7. **Verify** (only when requirements are met)
+
+It’s designed to stop “random optimizations” from becoming untraceable or un-revertable.
+
+---
+
+## Core concepts
+
+### 1) Change Logbook (`OPTIMIZATION_CHECKER.md`)
+A living, auditable log of:
+- what changed
+- how to validate
+- before/after evidence
+- monitoring window + verification decision
+
+### 2) Snapshots (`.optcheck/snapshots/*.json`)
+Structured machine-readable “before/after” state:
+- command outputs
+- service health checks
+- timings / sizes / counts
+
+### 3) Preflight
+A “diligence gate” before you claim an optimization is real:
+- is there a baseline?
+- is there a rollback path?
+- were required checks run?
+- (optionally) was an LLM review bundle generated and attested?
+
+### 4) Monitor (multi-day)
+The whole point: some regressions don’t show up immediately.
+
+`optcheck monitor tick` is designed to run daily (cron / Task Scheduler) and append verification data.
+
+### 5) Autopilot
+A cron-friendly one-liner that runs the boring stuff:
+- monitor tick
+- preflight
+- verify (dry-run)
+
+---
+
+## Install
+
+### Developer install (editable)
 
 ```bash
 python -m venv .venv
-# windows: .venv\Scripts\activate
-# mac/linux: source .venv/bin/activate
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+# source .venv/bin/activate
+
 pip install -e .
 ```
 
-YAML config uses `PyYAML` (included as a dependency).
+You should now have `optcheck` on PATH.
 
-## Quick start in a target project
+---
+
+## Quick start (in a target project)
 
 From your project root:
 
 ```bash
-# initialize templates + config
+# 1) Initialize optcheck scaffolding
 optcheck init
 
-# start a tracked change (appends to OPTIMIZATION_CHECKER.md)
+# 2) Start a change log entry
 optcheck change start --title "Bound log growth"
 
-# take a baseline snapshot
+# 3) Capture baseline
 optcheck snapshot --label before
 
-# ...make a single optimization change + commit...
+# 4) Make ONE optimization change + commit it
+# ... edit code ...
+# git add -A && git commit -m "Bound log growth"
 
-# take an after snapshot
+# 5) Capture after snapshot
 optcheck snapshot --label after
 
-# compare
-optcheck compare --before .optcheck/snapshots/<before>.json --after .optcheck/snapshots/<after>.json \
+# 6) Compare snapshots → markdown report
+optcheck compare \
+  --before .optcheck/snapshots/<before>.json \
+  --after  .optcheck/snapshots/<after>.json \
   --out reports/optcheck_compare.md
 
-# start multi-day monitoring (baseline defaults to latest snapshot if omitted)
+# 7) Start multi-day monitoring
 optcheck monitor start --change-id <chg-id> --days 5
 
-# run once per day (UTC) to append verification updates
+# 8) Run once per day (UTC)
 optcheck monitor tick
 
-# run diligence checks before optimizing
-optcheck preflight --out reports/optcheck_preflight.md
-
-# (recommended; required by default in new configs) generate evidence bundle for LLM review + attest the review mode
-optcheck review bundle --change-id <chg-id> --out reports/optcheck_review_bundle.md
-optcheck review attest --change-id <chg-id> --tool codex --reasoning-mode xhigh --model "openai-codex/..." --reviewer "<name>"
-
-# preflight can enforce attestation (new default is require_attestation=true)
-optcheck preflight --change-id <chg-id> --out reports/optcheck_preflight.md
-
-# to relax enforcement:
-# edit your config and set: review.require_attestation: false
-
-# when you have enough evidence, mark the change verified (refuses if missing requirements)
-optcheck change verify --change-id <chg-id> --min-monitor-days -1
-optcheck change verify --change-id <chg-id> --min-monitor-days -1 --apply --summary "No regressions observed over 3 days"
-
-# cron-friendly one-liner (runs monitor tick + preflight + verify dry-run)
-optcheck autopilot tick --change-id <chg-id>
-
-# generate an OpenClaw cron command to run autopilot daily
-optcheck openclaw cron-setup --change-id <chg-id> --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>"
-# optionally apply it:
-optcheck openclaw cron-setup --change-id <chg-id> --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>" --apply
-
-# repair/normalize optcheck scaffolding (dry-run by default)
-optcheck doctor
-optcheck doctor --apply
-
-# run read-only analyzers (bloat / maybe-unused deps)
-optcheck analyze --out reports/optcheck_analyze.md
+# 9) When you have evidence, verify
+optcheck change verify --change-id <chg-id> --min-monitor-days -1 --apply \
+  --summary "No regressions observed over 3 days"
 ```
 
-### If `optcheck` isn’t on PATH (common on Windows)
-
-Use module mode:
+If `optcheck` isn’t on PATH (common on Windows):
 
 ```bash
 python -m optcheck init
 python -m optcheck snapshot --label before
 ```
 
+---
+
+## Configuration
+
+`optcheck` looks for config in:
+
+- `optcheck.yml` / `optcheck.yaml` (project root)
+- `.optcheck/config.yml` / `.optcheck/config.yaml`
+- `.optcheck/config.json`
+
+Example `optcheck.yml`:
+
+```yaml
+project:
+  name: my-service
+
+checks:
+  commands:
+    - name: unit-tests
+      cmd: "pytest -q"
+    - name: service-health
+      cmd: "curl -sS http://127.0.0.1:8765/health"
+
+review:
+  require_attestation: true
+```
+
+---
+
 ## OpenClaw integration
 
 This repo includes an optional OpenClaw skill:
+
 - `openclaw_skill/optimization-checker/SKILL.md`
 
-It documents the safe workflow (change logbook + snapshots + multi-day monitor).
+And helper commands for cron-style automation:
 
-## Safety
+```bash
+# generate an OpenClaw cron payload to run daily
+autopilot="optcheck autopilot tick --change-id <chg-id>"
+optcheck openclaw cron-setup --change-id <chg-id> \
+  --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>"
 
-`optcheck` does **not** auto-edit your code. It only:
-- runs commands you explicitly configure
-- records measurements
-- writes snapshots + reports
+# apply it (writes cron job)
+optcheck openclaw cron-setup --change-id <chg-id> \
+  --cron "0 7 * * *" --tz "Asia/Dubai" --channel telegram --to "<chat_id>" --apply
+```
 
-## Roadmap
+---
 
-- language-specific modules (Python/Node/Go) for unused-dep hints
-- guided optimization question sets (by language + intent)
-- service health probes + latency budgets
-- multi-day monitoring helper
-- OpenClaw skill packaging
+## Safety model
+
+`optcheck` is intentionally conservative:
+
+- It **does not auto-edit your code**.
+- It runs only commands you explicitly configure.
+- It encourages **one optimization per commit** + **always keep a rollback path**.
+- It produces **audit artifacts** (snapshots, reports, logbook entries).
+
+---
+
+## Repo layout
+
+- `src/optcheck/` — CLI + core logic
+- `OPTIMIZATION_CHECKER.md` — template logbook
+- `openclaw_skill/` — optional OpenClaw skill wrapper
+
+---
+
+## License
+
+MIT (see `LICENSE`).

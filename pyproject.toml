@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "optimization-checker"
+name = "vibeship-optimizer"
 version = "0.1.0"
-description = "Safe, rollback-friendly optimization checker: snapshot + compare + validation docs."
+description = "Vibeship Optimizer: safe, rollback-friendly optimization workflow (optcheck) with snapshots + compare + verification."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
