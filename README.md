@@ -54,6 +54,12 @@ optcheck snapshot --label after
 # compare
 optcheck compare --before .optcheck/snapshots/<before>.json --after .optcheck/snapshots/<after>.json \
   --out reports/optcheck_compare.md
+
+# start multi-day monitoring (baseline defaults to latest snapshot if omitted)
+optcheck monitor start --change-id <chg-id> --days 5
+
+# run once per day (UTC) to append verification updates
+optcheck monitor tick
 ```
 
 ### If `optcheck` isn’t on PATH (common on Windows)

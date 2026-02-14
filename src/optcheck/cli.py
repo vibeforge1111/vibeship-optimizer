@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .core import DEFAULT_DIR, compare_snapshots, read_json, render_compare_markdown, snapshot, write_text, write_json
 from .logbook import create_change, list_changes, load_change
+from .monitor import load_monitor, start_monitor, tick_monitor
 
 
 TEMPLATE_CHECKER = """# Optimization Checker
@@ -136,6 +137,38 @@ def cmd_change_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_monitor_start(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    cmd_init(argparse.Namespace())
+    path = start_monitor(
+        project_root=root,
+        change_id=str(args.change_id),
+        baseline_snapshot=str(args.baseline) if args.baseline else None,
+        days=int(args.days),
+    )
+    print(json.dumps({"monitor": str(path)}, indent=2))
+    return 0
+
+
+def cmd_monitor_tick(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    cmd_init(argparse.Namespace())
+    checker_path = root / "OPTIMIZATION_CHECKER.md"
+    res = tick_monitor(project_root=root, checker_path=checker_path, force=bool(args.force))
+    print(json.dumps(res, indent=2))
+    return 0
+
+
+def cmd_monitor_status(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    state = load_monitor(root)
+    if not state:
+        print(json.dumps({"active": False}, indent=2))
+        return 0
+    print(json.dumps({"active": True, **state.to_dict()}, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="optcheck", description="Optimization checker: snapshot + compare")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -169,6 +202,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp2 = sub2.add_parser("list", help="List change records")
     sp2.set_defaults(func=cmd_change_list)
+
+    # Multi-day monitor
+    sp = sub.add_parser("monitor", help="Multi-day verification runner (snapshots + compare + append updates)")
+    sub2 = sp.add_subparsers(dest="monitor_cmd", required=True)
+
+    sp2 = sub2.add_parser("start", help="Start monitoring a change against a baseline snapshot")
+    sp2.add_argument("--change-id", required=True)
+    sp2.add_argument("--baseline", default="", help="baseline snapshot path (defaults to latest snapshot)")
+    sp2.add_argument("--days", type=int, default=5)
+    sp2.set_defaults(func=cmd_monitor_start)
+
+    sp2 = sub2.add_parser("tick", help="Run one monitoring tick (once per UTC day by default)")
+    sp2.add_argument("--force", action="store_true")
+    sp2.set_defaults(func=cmd_monitor_tick)
+
+    sp2 = sub2.add_parser("status", help="Show active monitor status")
+    sp2.set_defaults(func=cmd_monitor_status)
 
     return p
 

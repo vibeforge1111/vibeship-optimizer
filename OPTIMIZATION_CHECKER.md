@@ -18,7 +18,8 @@ Recommended loop:
 4) Make *one* optimization + commit
 5) `optcheck snapshot --label after`
 6) `optcheck compare --before ... --after ... --out reports/...`
-7) Monitor for 1–7 days; update the change section with results.
+7) Start a multi-day monitor: `optcheck monitor start --change-id <chg-...>`
+8) Run a daily tick: `optcheck monitor tick` (once per day)
 
 ## Optimization log
 
