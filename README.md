@@ -76,6 +76,10 @@ optcheck review attest --change-id <chg-id> --tool codex --reasoning-mode xhigh 
 # optional enforcement during preflight:
 optcheck preflight --change-id <chg-id> --out reports/optcheck_preflight.md
 
+# when you have enough evidence, mark the change verified (refuses if missing requirements)
+optcheck change verify --change-id <chg-id> --min-monitor-days 3
+optcheck change verify --change-id <chg-id> --min-monitor-days 3 --apply --summary "No regressions observed over 3 days"
+
 # repair/normalize optcheck scaffolding (dry-run by default)
 optcheck doctor
 optcheck doctor --apply

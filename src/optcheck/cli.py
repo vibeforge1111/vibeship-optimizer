@@ -12,6 +12,7 @@ from .analyze import analyze_project
 from .preflight import preflight
 from .doctor import doctor
 from .review import build_review_bundle, write_attestation
+from .verify import apply_verified, verify_change
 
 
 TEMPLATE_CHECKER = """# Optimization Checker
@@ -132,6 +133,37 @@ def cmd_change_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_change_verify(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    cmd_init(argparse.Namespace())
+
+    cfg, _cfg_path = load_config_for_project(root)
+
+    if args.apply:
+        payload = apply_verified(
+            project_root=root,
+            checker_path=root / "OPTIMIZATION_CHECKER.md",
+            change_id=str(args.change_id),
+            config=cfg,
+            min_monitor_days=int(args.min_monitor_days),
+            require_clean_git=bool(args.require_clean_git),
+            summary=str(args.summary or ""),
+        )
+        print(json.dumps(payload, indent=2))
+        return 0 if payload.get("ok") else 2
+
+    # dry-run
+    result = verify_change(
+        project_root=root,
+        change_id=str(args.change_id),
+        config=cfg,
+        min_monitor_days=int(args.min_monitor_days),
+        require_clean_git=bool(args.require_clean_git),
+    )
+    print(json.dumps({"change_id": str(args.change_id), **result.to_dict()}, indent=2))
+    return 0 if result.ok else 2
+
+
 def cmd_monitor_start(args: argparse.Namespace) -> int:
     root = Path.cwd()
     cmd_init(argparse.Namespace())
@@ -249,6 +281,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp2 = sub2.add_parser("list", help="List change records")
     sp2.set_defaults(func=cmd_change_list)
+
+    sp2 = sub2.add_parser("verify", help="Check evidence and (optionally) mark change as VERIFIED")
+    sp2.add_argument("--change-id", required=True)
+    sp2.add_argument("--min-monitor-days", type=int, default=3)
+    sp2.add_argument("--require-clean-git", action="store_true")
+    sp2.add_argument("--summary", default="", help="Summary to append when applying verified")
+    sp2.add_argument("--apply", action="store_true", help="Actually mark verified + append to OPTIMIZATION_CHECKER.md")
+    sp2.set_defaults(func=cmd_change_verify)
 
     # Multi-day monitor
     sp = sub.add_parser("monitor", help="Multi-day verification runner (snapshots + compare + append updates)")
