@@ -10,6 +10,7 @@ from .monitor import load_monitor, start_monitor, tick_monitor
 from .analyze import analyze_project
 from .preflight import preflight
 from .doctor import doctor
+from .review import build_review_bundle, write_attestation
 
 
 TEMPLATE_CHECKER = """# Optimization Checker
@@ -57,6 +58,14 @@ def cmd_init(args: argparse.Namespace) -> int:
                     {"name": "build", "cmd": "", "runs": 1, "timeout_s": 900},
                 ],
                 "http_probes": [],
+                "review": {
+                    "recommended": True,
+                    "require_attestation": False,
+                    "recommended_tools": {
+                        "codex": {"reasoning_mode": "xhigh"},
+                        "claude": {"reasoning_mode": "plan"},
+                    },
+                },
             },
         )
 
@@ -186,7 +195,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 def cmd_preflight(args: argparse.Namespace) -> int:
     root = Path.cwd()
     out = Path(args.out) if args.out else None
-    report = preflight(project_root=root, out_md=out)
+    report = preflight(project_root=root, out_md=out, change_id=str(args.change_id or ""))
     if out:
         print(json.dumps({"wrote": str(out), "worst_level": report.get("worst_level")}, indent=2))
     else:
@@ -198,6 +207,29 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     root = Path.cwd()
     report = doctor(project_root=root, apply=bool(args.apply))
     print(json.dumps(report, indent=2))
+    return 0
+
+
+def cmd_review_bundle(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    out = Path(args.out) if args.out else (root / ".optcheck" / "review_bundles" / f"{args.change_id}.md")
+    p = build_review_bundle(project_root=root, change_id=str(args.change_id), out_path=out)
+    print(json.dumps({"wrote": str(p)}, indent=2))
+    return 0
+
+
+def cmd_review_attest(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    p = write_attestation(
+        project_root=root,
+        change_id=str(args.change_id),
+        reviewer=str(args.reviewer or "unknown"),
+        model=str(args.model or "unknown"),
+        reasoning_mode=str(args.reasoning_mode or "default"),
+        tool=str(args.tool or "other"),
+        notes=str(args.notes or ""),
+    )
+    print(json.dumps({"wrote": str(p)}, indent=2))
     return 0
 
 
@@ -260,12 +292,31 @@ def build_parser() -> argparse.ArgumentParser:
     # Preflight
     sp = sub.add_parser("preflight", help="Diligence checks before optimizing (safe, read-only)")
     sp.add_argument("--out", default="", help="Write markdown report to path")
+    sp.add_argument("--change-id", default="", help="Optional: enforce checks for a specific change_id")
     sp.set_defaults(func=cmd_preflight)
 
     # Doctor
     sp = sub.add_parser("doctor", help="Repair/normalize optcheck scaffolding (.optcheck/config.json only)")
     sp.add_argument("--apply", action="store_true", help="Write changes (otherwise dry-run)")
     sp.set_defaults(func=cmd_doctor)
+
+    # Review (LLM-assisted, but evidence-based)
+    sp = sub.add_parser("review", help="Generate evidence bundles + record review attestations")
+    sub2 = sp.add_subparsers(dest="review_cmd", required=True)
+
+    sp2 = sub2.add_parser("bundle", help="Write a review bundle (git context + diff) to reduce hallucinations")
+    sp2.add_argument("--change-id", required=True)
+    sp2.add_argument("--out", default="", help="Write bundle markdown to this path")
+    sp2.set_defaults(func=cmd_review_bundle)
+
+    sp2 = sub2.add_parser("attest", help="Record which model/mode reviewed a change")
+    sp2.add_argument("--change-id", required=True)
+    sp2.add_argument("--tool", default="codex", choices=["codex", "claude", "other"]) 
+    sp2.add_argument("--reasoning-mode", default="high", help="e.g. high|xhigh|plan")
+    sp2.add_argument("--model", default="")
+    sp2.add_argument("--reviewer", default="")
+    sp2.add_argument("--notes", default="")
+    sp2.set_defaults(func=cmd_review_attest)
 
     return p
 

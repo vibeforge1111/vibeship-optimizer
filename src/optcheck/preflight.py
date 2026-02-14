@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from .analyze import analyze_project
-from .core import DEFAULT_DIR, SNAPSHOT_DIR, git_info, iso_now, load_config, read_json, render_compare_markdown, write_text
+from .core import DEFAULT_DIR, SNAPSHOT_DIR, git_info, iso_now, load_config, write_text
+from .review import attestation_path
 
 
 @dataclass
@@ -43,6 +44,7 @@ def preflight(
     *,
     project_root: Path,
     out_md: Optional[Path] = None,
+    change_id: str = "",
 ) -> Dict[str, Any]:
     """Run safe diligence checks.
 
@@ -155,6 +157,30 @@ def preflight(
                 hint="Run: optcheck snapshot --label before",
             )
         )
+
+    # --- Review attestation (optional but recommended; enforceable via config) ---
+    review_cfg = cfg.get("review") if isinstance(cfg, dict) else {}
+    require_att = bool((review_cfg or {}).get("require_attestation", False))
+    if change_id:
+        att_path = attestation_path(project_root, change_id)
+        if require_att and not att_path.exists():
+            findings.append(
+                Finding(
+                    level="fail",
+                    code="REVIEW_ATTESTATION_MISSING",
+                    message=f"Review attestation missing for change_id={change_id}.",
+                    hint="Run: optcheck review attest --change-id <id> --tool codex --reasoning-mode xhigh --model <model>",
+                )
+            )
+        elif not att_path.exists():
+            findings.append(
+                Finding(
+                    level="info",
+                    code="REVIEW_ATTESTATION_RECOMMENDED",
+                    message=f"No review attestation found for change_id={change_id} (recommended).",
+                    hint="Run: optcheck review bundle ... then optcheck review attest ...",
+                )
+            )
 
     # --- Analyze report (read-only) ---
     analysis = analyze_project(project_root=project_root, out_md=None)

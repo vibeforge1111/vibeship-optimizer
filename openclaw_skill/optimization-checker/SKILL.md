@@ -36,6 +36,26 @@ Use the `optcheck` CLI from this repo to run a Carmack-style optimization loop:
 
 This appends “Verification update” blocks to `OPTIMIZATION_CHECKER.md` and stores reports under `.optcheck/reports/`.
 
+## Preflight + hallucination protections
+
+1) Run diligence checks:
+- `python -m optcheck preflight --out reports/optcheck_preflight.md`
+
+2) Recommended: do an evidence-based review before applying an optimization.
+
+- Generate an evidence bundle (git context + diff) you can paste into an LLM:
+  - `python -m optcheck review bundle --change-id <chg-...> --out reports/optcheck_review_bundle.md`
+
+- If the user agrees, run the review in:
+  - **Codex** with **reasoning_mode=xhigh** (or high)
+  - **Claude** in **Plan mode**
+
+- Record the review as an attestation (so the checker can enforce it if configured):
+  - `python -m optcheck review attest --change-id <chg-...> --tool codex --reasoning-mode xhigh --model "<model>" --reviewer "<name>"`
+
+To *enforce* review attestations in preflight, set:
+- `.optcheck/config.json` → `review.require_attestation=true`
+
 ## Read-only analyzers (safe)
 
 - `python -m optcheck analyze --out reports/optcheck_analyze.md`
