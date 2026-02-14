@@ -12,8 +12,12 @@ A **safe, rollback-friendly optimization workflow** for any codebase (and especi
 
 This repo provides:
 
-- `optcheck` CLI (Python, minimal deps)
-- templates: `OPTIMIZATION_CHECKER.md`, `optcheck.yml`
+- `optcheck` CLI (Python, minimal deps; YAML config supported)
+- templates: `OPTIMIZATION_CHECKER.md`
+- config formats supported:
+  - `optcheck.yml` / `optcheck.yaml` (project root)
+  - `.optcheck/config.yml` / `.optcheck/config.yaml`
+  - `.optcheck/config.json`
 - a snapshot+compare system that produces diffs as markdown reports
 
 ## Philosophy
@@ -31,6 +35,8 @@ python -m venv .venv
 # mac/linux: source .venv/bin/activate
 pip install -e .
 ```
+
+YAML config uses `PyYAML` (included as a dependency).
 
 ## Quick start in a target project
 

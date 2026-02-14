@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .core import DEFAULT_DIR, SNAPSHOT_DIR, compare_snapshots, iso_now, read_json, render_compare_markdown, snapshot, write_json, write_text
+from .configio import load_config_for_project
 from .logbook import change_path, load_change
 
 
@@ -147,7 +148,8 @@ def tick_monitor(
 
     # Take a monitoring snapshot.
     day_index = state.runs_completed
-    snap_path = snapshot(project_root=project_root, label=f"day{day_index}", config_path=project_root / DEFAULT_DIR / "config.json")
+    _cfg, cfg_path = load_config_for_project(project_root)
+    snap_path = snapshot(project_root=project_root, label=f"day{day_index}", config_path=cfg_path)
 
     before = read_json(Path(state.baseline_snapshot))
     after = read_json(snap_path)

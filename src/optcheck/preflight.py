@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from .analyze import analyze_project
-from .core import DEFAULT_DIR, SNAPSHOT_DIR, git_info, iso_now, load_config, write_text
+from .core import DEFAULT_DIR, SNAPSHOT_DIR, git_info, iso_now, write_text
 from .review import attestation_path
 
 
@@ -89,19 +89,18 @@ def preflight(
             )
 
     # --- Config checks ---
-    cfg_path = _config_path(project_root)
+    from .configio import load_config_for_project, find_config_path
+
+    cfg, cfg_path = load_config_for_project(project_root)
     if not cfg_path.exists():
         findings.append(
             Finding(
                 level="fail",
                 code="CONFIG_MISSING",
-                message=".optcheck/config.json is missing.",
+                message=f"Config is missing (expected at {find_config_path(project_root)}).",
                 hint="Run: optcheck init",
             )
         )
-        cfg = {}
-    else:
-        cfg = load_config(cfg_path)
 
     timings = cfg.get("timings") or []
     if not timings:

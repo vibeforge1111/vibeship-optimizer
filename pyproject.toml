@@ -12,7 +12,7 @@ license = { file = "LICENSE" }
 authors = [{ name = "OpenClaw community" }]
 keywords = ["performance", "optimization", "validation", "openclaw", "ops"]
 
-dependencies = []
+dependencies = ["PyYAML>=6.0"]
 
 [project.scripts]
 optcheck = "optcheck.cli:main"

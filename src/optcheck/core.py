@@ -203,9 +203,28 @@ def default_config() -> Dict[str, Any]:
 
 
 def load_config(config_path: Path) -> Dict[str, Any]:
-    # v0.1: JSON config for simplicity.
+    """Load config from JSON or YAML.
+
+    This keeps core snapshot functionality working even when callers pass a
+    YAML config path.
+
+    Prefer using `optcheck.configio.load_config_for_project()` when possible.
+    """
     if not config_path.exists():
         return default_config()
+
+    suffix = config_path.suffix.lower()
+    if suffix in (".yml", ".yaml"):
+        try:
+            import yaml  # type: ignore
+
+            data = yaml.safe_load(read_text(config_path))
+            if isinstance(data, dict):
+                return {**default_config(), **data}
+        except Exception:
+            return default_config()
+        return default_config()
+
     cfg = read_json(config_path)
     if not isinstance(cfg, dict):
         return default_config()
@@ -218,6 +237,7 @@ def snapshot(
     label: str,
     config_path: Path,
 ) -> Path:
+    # config_path is explicit for now; higher-level code should resolve YAML vs JSON.
     cfg = load_config(config_path)
 
     timings_cfg = cfg.get("timings") or []

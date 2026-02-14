@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .core import DEFAULT_DIR, compare_snapshots, read_json, render_compare_markdown, snapshot, write_text, write_json
+from .configio import find_config_path, load_config_for_project, write_config
 from .logbook import create_change, list_changes, load_change
 from .monitor import load_monitor, start_monitor, tick_monitor
 from .analyze import analyze_project
@@ -45,29 +46,11 @@ def cmd_init(args: argparse.Namespace) -> int:
     opt_dir = root / DEFAULT_DIR
     opt_dir.mkdir(parents=True, exist_ok=True)
 
-    cfg_path = opt_dir / "config.json"
+    cfg_path = find_config_path(root)
     if not cfg_path.exists():
         # Minimal config: users edit commands they care about.
-        write_json(
-            cfg_path,
-            {
-                "version": 1,
-                "size_paths": ["."],
-                "timings": [
-                    {"name": "tests", "cmd": "", "runs": 1, "timeout_s": 900},
-                    {"name": "build", "cmd": "", "runs": 1, "timeout_s": 900},
-                ],
-                "http_probes": [],
-                "review": {
-                    "recommended": True,
-                    "require_attestation": False,
-                    "recommended_tools": {
-                        "codex": {"reasoning_mode": "xhigh"},
-                        "claude": {"reasoning_mode": "plan"},
-                    },
-                },
-            },
-        )
+        cfg, _path = load_config_for_project(root)
+        write_config(cfg_path, cfg)
 
     checker_path = root / "OPTIMIZATION_CHECKER.md"
     if not checker_path.exists():
@@ -80,7 +63,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_snapshot(args: argparse.Namespace) -> int:
     root = Path.cwd()
-    cfg_path = root / DEFAULT_DIR / "config.json"
+    _cfg, cfg_path = load_config_for_project(root)
     out = snapshot(project_root=root, label=str(args.label or "snapshot"), config_path=cfg_path)
     print(str(out))
     return 0

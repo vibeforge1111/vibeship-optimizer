@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .core import DEFAULT_DIR, default_config, load_config, write_json
+from .core import DEFAULT_DIR, default_config
+from .configio import load_config_for_project, write_config, find_config_path
 
 
 @dataclass
@@ -19,7 +20,7 @@ class DoctorAction:
 
 
 def _config_path(project_root: Path) -> Path:
-    return project_root / DEFAULT_DIR / "config.json"
+    return find_config_path(project_root)
 
 
 def _merge_dict(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
@@ -48,11 +49,12 @@ def doctor(
 
     cfg_path = _config_path(project_root)
     if not cfg_path.exists():
-        actions.append(DoctorAction(code="CONFIG_CREATE", changed=apply, message="Create .optcheck/config.json"))
+        actions.append(DoctorAction(code="CONFIG_CREATE", changed=apply, message=f"Create config at {cfg_path}"))
         if apply:
-            write_json(cfg_path, default_config())
+            write_config(cfg_path, default_config())
 
-    cfg = load_config(cfg_path) if cfg_path.exists() else default_config()
+    cfg, cfg_path2 = load_config_for_project(project_root)
+    cfg_path = cfg_path2
 
     changed = False
 
@@ -103,12 +105,12 @@ def doctor(
         actions.append(DoctorAction(code="HTTP_PROBES_CREATE", changed=apply, message="Create http_probes list"))
 
     if changed and apply:
-        write_json(cfg_path, cfg)
+        write_config(cfg_path, cfg)
 
     return {
         "schema": "optcheck.doctor.v1",
         "apply": bool(apply),
         "config_path": str(cfg_path),
         "actions": [a.to_dict() for a in actions],
-        "note": "Doctor only edits .optcheck/config.json. It does not edit your code.",
+        "note": "Doctor only edits the optcheck config file (YAML/JSON). It does not edit your code.",
     }
