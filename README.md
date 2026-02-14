@@ -64,6 +64,10 @@ optcheck monitor tick
 # run diligence checks before optimizing
 optcheck preflight --out reports/optcheck_preflight.md
 
+# repair/normalize optcheck scaffolding (dry-run by default)
+optcheck doctor
+optcheck doctor --apply
+
 # run read-only analyzers (bloat / maybe-unused deps)
 optcheck analyze --out reports/optcheck_analyze.md
 ```
