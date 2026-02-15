@@ -18,6 +18,7 @@ from .verify import apply_verified, verify_change
 from .autopilot import autopilot_tick, render_autopilot_summary
 from .openclaw_integration import CronSpec, apply_cron_add, build_cron_add_command
 from .onboarding import apply_onboarding, onboarding_next_steps, suggest_timing_cmd
+from .llm_instructions import build_llm_bundle, operator_prompt, render_llm_bundle_markdown
 
 
 TEMPLATE_CHECKER = """# vibeship-optimizer
@@ -170,6 +171,36 @@ def cmd_onboard(args: argparse.Namespace) -> int:
         for line in onboarding_next_steps()[:5]:
             print(f"- {line}")
 
+    return 0
+
+
+def cmd_llm_bundle(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    init_project(root)
+
+    change_id = str(getattr(args, "change_id", "") or "").strip()
+    out = str(getattr(args, "out", "") or "").strip()
+    fmt = str(getattr(args, "format", "md") or "md").strip().lower()
+
+    bundle = build_llm_bundle(project_root=root, change_id=change_id)
+
+    if fmt == "json":
+        print(json.dumps(bundle, indent=2, ensure_ascii=False))
+        return 0
+
+    out_path = Path(out) if out else (root / "reports" / "vibeship_optimizer_llm_bundle.md")
+    write_text(out_path, render_llm_bundle_markdown(bundle))
+    print(json.dumps({"wrote": str(out_path)}, indent=2))
+    return 0
+
+
+def cmd_llm_prompt(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    prompt = operator_prompt(project_root=root)
+    if args.format == "json":
+        print(json.dumps({"prompt": prompt}, indent=2, ensure_ascii=False))
+    else:
+        print(prompt)
     return 0
 
 
@@ -495,6 +526,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--dry-run", action="store_true", help="Print what would change without writing config")
     sp.add_argument("--format", default="text", choices=["text", "json"], help="Output format")
     sp.set_defaults(func=cmd_onboard)
+
+    sp = sub.add_parser("llm", help="Generate prompts/bundles for controlling vibeship-optimizer from any LLM")
+    sub2 = sp.add_subparsers(dest="llm_cmd", required=True)
+
+    sp2 = sub2.add_parser("prompt", help="Print a pasteable operator prompt (no project data)")
+    sp2.add_argument("--format", default="text", choices=["text", "json"], help="Output format")
+    sp2.set_defaults(func=cmd_llm_prompt)
+
+    sp2 = sub2.add_parser("bundle", help="Write a context bundle to paste into an LLM (preflight+analyze+config summary)")
+    sp2.add_argument("--change-id", default="", help="Optional: include change_id enforcement in preflight")
+    sp2.add_argument("--out", default="", help="Write markdown bundle to this path (default: reports/vibeship_optimizer_llm_bundle.md)")
+    sp2.add_argument("--format", default="md", choices=["md", "json"], help="Output format")
+    sp2.set_defaults(func=cmd_llm_bundle)
 
     sp = sub.add_parser("snapshot", help="Capture a snapshot (sizes, timings, probes)")
     sp.add_argument("--label", default="", help="label for snapshot")

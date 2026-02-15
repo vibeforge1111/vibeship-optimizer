@@ -234,6 +234,18 @@ Security note: **never paste secrets/tokens** into the bundle.
 
 ---
 
+## Any LLM (natural-language control)
+
+If you want to use vibeship-optimizer with any LLM (local or hosted), generate a small bundle you can paste:
+
+```bash
+python -m vibeship_optimizer llm bundle --out reports/vibeship_optimizer_llm_bundle.md
+```
+
+Then paste that markdown into your LLM and ask it to propose the next commands to run.
+
+---
+
 ## Configuration
 
 vibeship-optimizer looks for config in:
