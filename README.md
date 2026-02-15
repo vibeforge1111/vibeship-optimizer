@@ -92,6 +92,9 @@ If this is your first time using vibeship-optimizer in a project, run:
 python -m vibeship_optimizer onboard
 ```
 
+Tip: on a fresh project, `python -m vibeship_optimizer init` will also offer to run onboarding (only in interactive terminals).
+To run onboarding non-interactively: `python -m vibeship_optimizer init --onboard --no-prompt`.
+
 This will:
 - ensure the logbook + config exist
 - try to set a safe default timing command (only when it has a strong guess)

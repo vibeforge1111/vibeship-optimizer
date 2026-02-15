@@ -9,7 +9,8 @@ from .questionnaire import detect_languages
 
 def _read_json_file(path: Path) -> Dict[str, Any]:
     try:
-        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        # Use utf-8-sig to tolerate BOM (common on Windows editors / some PowerShell defaults).
+        data = json.loads(path.read_text(encoding="utf-8-sig", errors="replace"))
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}

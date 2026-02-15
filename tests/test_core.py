@@ -57,3 +57,21 @@ def test_cli_compare_invalid_json_exits_nonzero(tmp_path: Path) -> None:
     )
     assert proc.returncode == 2
 
+
+def test_cli_init_onboard_sets_node_test_command(tmp_path: Path) -> None:
+    # Arrange a minimal Node project with a real test script.
+    (tmp_path / "package.json").write_text(
+        json.dumps({"name": "x", "scripts": {"test": "vitest"}}),
+        encoding="utf-8",
+    )
+
+    proc = subprocess.run(
+        [sys.executable, "-m", "vibeship_optimizer", "init", "--onboard", "--no-prompt"],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0
+
+    cfg = (tmp_path / ".vibeship-optimizer" / "config.yml").read_text(encoding="utf-8", errors="ignore")
+    assert "npm test" in cfg

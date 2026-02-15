@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -87,6 +88,41 @@ def cmd_init(args: argparse.Namespace) -> int:
     res = init_project(root)
     print(f"Initialized: {res['config_path']}")
     print(f"Initialized: {res['logbook_path']}")
+
+    # Optional onboarding prompt: only when init actually created/migrated
+    # scaffolding, and only in interactive terminals (avoid OpenClaw/CI).
+    created = res.get("created") or {}
+    did_create = bool(created.get("config") or created.get("logbook") or created.get("logbook_migrated"))
+    no_prompt = bool(getattr(args, "no_prompt", False)) or bool(os.environ.get("VIBESHIP_OPTIMIZER_NO_PROMPT"))
+    run_onboard = bool(getattr(args, "onboard", False))
+
+    # If the user explicitly asked for onboarding, run it even in non-interactive contexts.
+    if did_create and run_onboard:
+        return cmd_onboard(
+            argparse.Namespace(
+                timing_cmd="",
+                force=False,
+                dry_run=False,
+                format="text",
+            )
+        )
+
+    if did_create and not no_prompt and sys.stdin.isatty() and sys.stdout.isatty():
+        try:
+            ans = input("Run quick onboarding now (minimal config + next steps)? [Y/n] ").strip().lower()
+            run_onboard = (ans == "" or ans.startswith("y"))
+        except Exception:
+            run_onboard = False
+
+        if run_onboard:
+            return cmd_onboard(
+                argparse.Namespace(
+                    timing_cmd="",
+                    force=False,
+                    dry_run=False,
+                    format="text",
+                )
+            )
     return 0
 
 
@@ -449,6 +485,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sp = sub.add_parser("init", help="Create .vibeship-optimizer config and VIBESHIP_OPTIMIZER.md template")
+    sp.add_argument("--onboard", action="store_true", help="Run quick onboarding immediately after init")
+    sp.add_argument("--no-prompt", action="store_true", help="Disable the onboarding prompt (TTY only)")
     sp.set_defaults(func=cmd_init)
 
     sp = sub.add_parser("onboard", help="First-run onboarding: set minimal config + print next steps")
